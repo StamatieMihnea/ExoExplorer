@@ -12,6 +12,7 @@
     "3d-tiles-renderer": "^0.4.17",
     "next": "15.5.4",
     "mongodb": "^6.20.0",
+    "openai": "^6.1.0",
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "three": "^0.180.0"
