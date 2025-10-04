@@ -20,6 +20,8 @@ export async function GET() {
       star_mass: 1,
       star_radius: 1,
       star_age: 1,
+      texture_high_url: 1,
+      texture_low_url: 1,
     };
 
     // Get all exoplanets

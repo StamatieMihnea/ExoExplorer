@@ -8,28 +8,28 @@ export const SCENE_CONFIG: SceneConfig = {
   camera: {
     fov: 45,
     near: 1,
-    far: 500000000,
+    far: 1200000000,
     initialPosition: new THREE.Vector3(0, 0, 50000000),
   },
   fog: {
-    color: 0x000000,
-    near: 1,
-    far: 300000000,
+    color: 0x050510, // Deep space with subtle purple tint
+    near: 200000000,
+    far: 900000000,
   },
   lighting: {
     ambient: {
-      color: 0x404040,
-      intensity: 1.5,
+      color: 0x8899bb,
+      intensity: 1.6,
     },
     sun: {
       color: 0xffffff,
-      intensity: 2,
+      intensity: 4,
       position: new THREE.Vector3(20000000, 20000000, 20000000),
     },
   },
   renderer: {
     antialias: true,
-    alpha: true,
+    alpha: false,
     logarithmicDepthBuffer: true,
   },
 };
@@ -46,8 +46,8 @@ export const TILES_CONFIG: TilesConfig = {
 export const EXOPLANET_CONFIG: ExoplanetConfig = {
   count: 10000,
   radius: 5000000,
-  minDistanceFromEarth: 80000000,
-  maxDistanceFromEarth: 250000000,
+  minDistanceFromEarth: 200000000,
+  maxDistanceFromEarth: 625000000,
   lodLevels: [
     { detail: 16, distance: 5000000 },
     { detail: 8, distance: 20000000 },

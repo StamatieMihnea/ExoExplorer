@@ -105,6 +105,16 @@ export class CameraService {
     }
   }
 
+  setControlsEnabled(enabled: boolean): void {
+    if (this.controls && !this.animation) {
+      this.controls.enabled = enabled;
+    }
+  }
+
+  getControlsEnabled(): boolean {
+    return this.controls?.enabled ?? false;
+  }
+
   returnToEarth(): void {
     this.startAnimation(
       SCENE_CONFIG.camera.initialPosition.clone(),
