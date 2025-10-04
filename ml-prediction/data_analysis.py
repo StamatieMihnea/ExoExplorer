@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 
 # Load the data
-df = pd.read_csv('cumulative_2025.10.04_02.38.51.csv', comment='#')
+df = pd.read_csv('data/cumulative_2025.10.04_02.38.51.csv', comment='#')
 
 print("Dataset Shape:", df.shape)
 print("\n" + "="*80)

@@ -41,7 +41,7 @@ print(f"Loaded {len(feature_names)} features")
 
 # Load and preprocess data
 print("\n[2] Loading and preprocessing data...")
-preprocessor = ExoplanetDataPreprocessor('cumulative_2025.10.04_02.38.51.csv')
+preprocessor = ExoplanetDataPreprocessor('data/cumulative_2025.10.04_02.38.51.csv')
 df = preprocessor.load_data()
 X, y, _ = preprocessor.preprocess(df)
 
