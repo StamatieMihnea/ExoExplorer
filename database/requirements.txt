@@ -1,0 +1,3 @@
+# Python dependencies for ExoExplorer database scripts
+pymongo>=4.6.0
+
