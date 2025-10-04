@@ -1,0 +1,325 @@
+Exo Explorer - Modular Architecture
+====================================
+
+📁 PROJECT STRUCTURE
+====================
+
+web/
+│
+├── 📄 Documentation Files
+│   ├── README.md                    - Project overview
+│   ├── ARCHITECTURE.md              - Architecture documentation (detailed)
+│   ├── CONTRIBUTING.md              - Contribution guidelines
+│   ├── REFACTORING_SUMMARY.md       - Before/after comparison
+│   └── STRUCTURE.txt                - This file
+│
+├── 📂 src/
+│   │
+│   ├── 📄 src/README.md             - Source code guide
+│   │
+│   ├── 🎨 app/                      - Next.js App Router
+│   │   ├── page.tsx                 - Main entry point (uses SceneView)
+│   │   ├── layout.tsx               - Root layout
+│   │   └── globals.css              - Global styles
+│   │
+│   ├── 👁️  views/                   - High-level view components
+│   │   └── SceneView.tsx            - Main 3D scene view with UI overlay
+│   │
+│   ├── 🧩 components/               - Reusable UI components
+│   │   ├── index.ts                 - Component exports
+│   │   │
+│   │   ├── ui/                      - Base UI components
+│   │   │   ├── GlassCard.tsx        - Glassmorphic card container
+│   │   │   └── GlassButton.tsx      - Stylized button (4 variants)
+│   │   │
+│   │   └── layout/                  - Layout components
+│   │       ├── Header.tsx           - App header with branding
+│   │       ├── InfoPanel.tsx        - Navigation instructions
+│   │       ├── StatsCard.tsx        - Statistics display
+│   │       └── ActionButtons.tsx    - Action controls
+│   │
+│   ├── 🪝 hooks/                    - Custom React hooks
+│   │   ├── index.ts                 - Hook exports
+│   │   └── useThreeScene.ts         - Main scene management hook
+│   │                                  (orchestrates all services)
+│   │
+│   ├── ⚙️  services/                 - Business logic services
+│   │   ├── index.ts                 - Service exports
+│   │   ├── scene.service.ts         - Scene, camera, lighting setup
+│   │   ├── tiles.service.ts         - 3D Tiles (Earth) management
+│   │   ├── exoplanets.service.ts    - Exoplanet generation & LOD
+│   │   └── camera.service.ts        - Camera controls & animations
+│   │
+│   ├── 🛠️  utils/                    - Utility functions
+│   │   ├── index.ts                 - Utility exports
+│   │   ├── math.utils.ts            - Math helpers (sphere, lerp)
+│   │   └── texture.utils.ts         - Texture optimization
+│   │
+│   ├── 📘 types/                    - TypeScript definitions
+│   │   └── scene.types.ts           - All scene-related types
+│   │
+│   └── 🎛️  constants/                - Configuration
+│       └── scene.constants.ts       - All config values
+│
+├── 📦 Configuration Files
+│   ├── package.json                 - Dependencies
+│   ├── tsconfig.json                - TypeScript config
+│   ├── next.config.ts               - Next.js config
+│   └── postcss.config.mjs           - PostCSS config
+│
+└── 🗂️  Other
+    ├── public/                      - Static assets
+    └── node_modules/                - Dependencies
+
+
+🔄 DATA FLOW
+============
+
+User Interaction
+      ↓
+┌─────────────────────────────────────────────┐
+│              Views Layer                    │
+│           (SceneView.tsx)                   │
+│  • Combines scene + UI                      │
+│  • Handles layout                           │
+└─────────────────┬───────────────────────────┘
+                  │
+        ┌─────────┴─────────┐
+        │                   │
+        ▼                   ▼
+┌───────────────┐    ┌──────────────────────┐
+│  Components   │    │     Hooks Layer      │
+│   Layer       │    │  (useThreeScene)     │
+│               │    │  • Service lifecycle │
+│ • Header      │    │  • Animation loop    │
+│ • InfoPanel   │    │  • Event handling    │
+│ • StatsCard   │    │  • Cleanup           │
+│ • Buttons     │    └──────────┬───────────┘
+└───────────────┘               │
+                                │
+                    ┌───────────┴───────────┐
+                    │                       │
+                    ▼                       ▼
+            ┌──────────────┐        ┌────────────┐
+            │   Services   │        │   Utils    │
+            │    Layer     │        │   Layer    │
+            │              │        │            │
+            │ • Scene      │        │ • Math     │
+            │ • Tiles      │        │ • Texture  │
+            │ • Exoplanets │        │            │
+            │ • Camera     │        └────────────┘
+            └──────┬───────┘
+                   │
+         ┌─────────┴──────────┐
+         │                    │
+         ▼                    ▼
+  ┌────────────┐      ┌──────────────┐
+  │   Types    │      │  Constants   │
+  │   Layer    │      │    Layer     │
+  └────────────┘      └──────────────┘
+         │                    │
+         └──────────┬─────────┘
+                    ▼
+             Three.js / WebGL
+
+
+📊 MODULE STATISTICS
+====================
+
+Module Type    | Files | Lines | Responsibility
+---------------|-------|-------|----------------------------------
+Services       |   4   | ~295  | Business logic, Three.js setup
+Components     |   6   | ~120  | UI presentation
+Hooks          |   1   | ~161  | React integration
+Utils          |   2   |  ~68  | Pure helper functions
+Types          |   1   |  ~52  | Type definitions
+Constants      |   1   |  ~55  | Configuration values
+Views          |   1   |  ~37  | High-level composition
+---------------|-------|-------|----------------------------------
+TOTAL          |  16   | ~788  | Modular architecture
+
+
+🎯 KEY FEATURES
+===============
+
+✅ Modular Architecture
+   • Single Responsibility Principle
+   • Clear separation of concerns
+   • Easy to locate and modify code
+
+✅ Type Safety
+   • 100% TypeScript coverage
+   • No implicit any types
+   • Compile-time error detection
+
+✅ Reusability
+   • Services can be used independently
+   • Components are composable
+   • Utils are pure functions
+
+✅ Maintainability
+   • Small, focused files (avg 49 lines)
+   • Consistent patterns
+   • Well documented
+
+✅ Testability
+   • Services can be unit tested
+   • Components can be tested in isolation
+   • Pure functions are easy to test
+
+✅ Scalability
+   • Easy to add new features
+   • Ready for team collaboration
+   • Clear place for everything
+
+
+🔧 MAIN SERVICES
+================
+
+SceneService
+├─ createScene()           → THREE.Scene with fog
+├─ createCamera()          → PerspectiveCamera
+├─ createLighting()        → Ambient + Sun lights
+├─ createRenderer()        → WebGLRenderer
+└─ handleWindowResize()    → Responsive updates
+
+TilesService
+├─ createTiles()           → 3D Tiles for Earth
+├─ update()                → Update LOD & resolution
+├─ rotateTiles()           → Animate Earth rotation
+└─ dispose()               → Cleanup resources
+
+ExoplanetsService
+├─ createExoplanets()      → Generate 10,000 LOD objects
+└─ dispose()               → Cleanup geometries
+
+CameraService
+├─ createControls()        → FlyControls setup
+├─ setupMouseControls()    → Right-click navigation
+├─ startAnimation()        → Camera animation
+├─ updateAnimation()       → Smooth lerping
+├─ returnToEarth()         → Reset camera
+└─ dispose()               → Cleanup
+
+
+🎨 UI COMPONENTS
+================
+
+Layout Components:
+├─ Header              → Branding + navigation
+├─ InfoPanel           → Usage instructions
+├─ StatsCard           → Statistics display
+└─ ActionButtons       → Interactive controls
+
+Base Components:
+├─ GlassCard           → Glassmorphic container
+└─ GlassButton         → Styled button (variants: default, emerald, blue, purple)
+
+
+📚 DOCUMENTATION
+================
+
+1. ARCHITECTURE.md
+   → Detailed architecture overview
+   → Design principles
+   → Module descriptions
+   → Future improvements
+
+2. CONTRIBUTING.md
+   → Development setup
+   → Code style guide
+   → How to add features
+   → Best practices
+
+3. REFACTORING_SUMMARY.md
+   → Before/after comparison
+   → Benefits of refactoring
+   → Migration path
+   → Metrics
+
+4. src/README.md
+   → Code structure
+   → Import patterns
+   → Adding features
+   → Examples
+
+5. STRUCTURE.txt (this file)
+   → Visual overview
+   → Quick reference
+
+
+🚀 GETTING STARTED
+==================
+
+1. Install dependencies:
+   npm install
+
+2. Start development:
+   npm run dev
+
+3. Build for production:
+   npm run build
+
+4. Read the docs:
+   - Start with ARCHITECTURE.md for overview
+   - Check CONTRIBUTING.md for development
+   - See src/README.md for code details
+
+
+💡 COMMON TASKS
+===============
+
+Add UI Component:
+  src/components/[ui|layout]/MyComponent.tsx
+  Export from src/components/index.ts
+  Use in src/views/SceneView.tsx
+
+Add Service:
+  src/services/my.service.ts
+  Add types to src/types/scene.types.ts
+  Add config to src/constants/scene.constants.ts
+  Export from src/services/index.ts
+  Use in src/hooks/useThreeScene.ts
+
+Add Hook:
+  src/hooks/useMyHook.ts
+  Export from src/hooks/index.ts
+  Use in components/views
+
+Update Configuration:
+  Edit src/constants/scene.constants.ts
+
+
+🎓 LEARNING RESOURCES
+=====================
+
+• Three.js: https://threejs.org/docs/
+• Next.js: https://nextjs.org/docs
+• React Hooks: https://react.dev/reference/react
+• TypeScript: https://www.typescriptlang.org/docs/
+• 3D Tiles: https://github.com/NASA-AMMOS/3DTilesRendererJS
+
+
+✨ PRINCIPLES
+=============
+
+1. Single Responsibility
+   Each module does ONE thing well
+
+2. Type Safety
+   All code is fully typed
+
+3. Clean Code
+   Consistent patterns, clear naming
+
+4. Documentation
+   Complex logic is explained
+
+5. Resource Cleanup
+   All Three.js objects are disposed
+
+
+═══════════════════════════════════════════════
+Built with ❤️ using Next.js, Three.js, TypeScript
+═══════════════════════════════════════════════
+
