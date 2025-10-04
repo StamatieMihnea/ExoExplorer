@@ -143,5 +143,5 @@ if __name__ == '__main__':
 	# Helpful local runner: uvicorn should be installed in the environment
 	import uvicorn
 
-	uvicorn.run('server:app', host='0.0.0.0', port=8000, reload=True)
+	uvicorn.run('server:app', host='0.0.0.0', port=3001, reload=True)
 
