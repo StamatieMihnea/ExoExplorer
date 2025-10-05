@@ -5,6 +5,7 @@ interface GlassButtonProps {
   onClick?: () => void;
   variant?: 'default' | 'emerald' | 'blue' | 'purple';
   className?: string;
+  disabled?: boolean;
 }
 
 const variantStyles = {
@@ -18,11 +19,13 @@ export function GlassButton({
   children, 
   onClick, 
   variant = 'default',
-  className = '' 
+  className = '',
+  disabled = false
 }: GlassButtonProps) {
   return (
     <button
       onClick={onClick}
+      disabled={disabled}
       className={`backdrop-blur-md transition-all duration-300 rounded-xl px-5 py-3 border shadow-lg ${variantStyles[variant]} ${className}`}
     >
       <span className="text-white font-medium">{children}</span>

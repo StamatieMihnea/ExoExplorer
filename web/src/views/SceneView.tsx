@@ -8,6 +8,7 @@ import { Header } from '@/components/layout/Header';
 import { InfoPanel } from '@/components/layout/InfoPanel';
 import { StatsCard } from '@/components/layout/StatsCard';
 import { SearchInput } from '@/components/layout/SearchInput';
+import { WelcomeModal } from '@/components/layout/WelcomeModal';
 import { GlassButton } from '@/components/ui/GlassButton';
 import { useThreeScene } from '@/hooks/useThreeScene';
 
@@ -26,6 +27,7 @@ export function SceneView() {
 
   const [showAllPlanets, setShowAllPlanets] = useState(false);
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
+  const [showWelcomeModal, setShowWelcomeModal] = useState(true);
 
   const handleSearchFocusChange = (focused: boolean) => {
     // Disable controls when search is focused, enable when blurred
@@ -54,7 +56,7 @@ export function SceneView() {
         <Header exoplanetsCount={exoplanetsCount} />
 
         {/* Search Input at Top Middle */}
-        <div className="absolute top-6 left-1/2 transform -translate-x-1/2">
+        <div className="absolute top-6 left-1/2 transform -translate-x-1/2 pointer-events-auto z-[10000]">
           <SearchInput 
             onSelectPlanet={navigateToPlanet}
             onFocusChange={handleSearchFocusChange}
@@ -111,6 +113,11 @@ export function SceneView() {
           />
         )}
       </div>
+
+      {/* Welcome Modal - Outside pointer-events-none container */}
+      {showWelcomeModal && (
+        <WelcomeModal onClose={() => setShowWelcomeModal(false)} />
+      )}
     </>
   );
 }
