@@ -93,8 +93,8 @@ export async function POST(request: NextRequest) {
         const exoplanetDoc: any = {
           // Required fields for the scene
           name: body.planet_name || `Exoplanet-${Date.now()}`,
-          radius: body.koi_prad || null,  // Map koi_prad to radius
-          mass: body.koi_mass || null,
+          radius: body.radius || body.koi_prad || null,  // Use direct radius first, then koi_prad
+          mass: body.mass || body.koi_mass || null,  // Use direct mass first, then koi_mass
           temp_calculated: body.koi_teq || null,  // Map koi_teq to temp_calculated
           
           // Star properties (required for scene positioning)

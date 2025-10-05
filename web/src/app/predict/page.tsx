@@ -27,6 +27,8 @@ interface UploadResult {
 // Common exoplanet features for the form
 const FORM_FIELDS = [
   { name: 'planet_name', label: '🪐 Exoplanet Name', placeholder: 'e.g., Kepler-442b', type: 'text', required: true, fullWidth: true },
+  { name: 'radius', label: 'Planet Radius (Earth radii)', placeholder: 'e.g., 2.5', type: 'number' },
+  { name: 'mass', label: 'Planet Mass (Earth masses)', placeholder: 'e.g., 5.0', type: 'number' },
   { name: 'star_distance', label: 'Distance from Earth (light years)', placeholder: 'e.g., 1200', type: 'number' },
   { name: 'koi_period', label: 'Orbital Period (days)', placeholder: 'e.g., 10.5', type: 'number' },
   { name: 'koi_time0bk', label: 'Transit Epoch (days)', placeholder: 'e.g., 170.5', type: 'number' },
@@ -156,6 +158,8 @@ export default function PredictPage() {
     // Good quality exoplanet candidate - targeting ~85% CANDIDATE confidence
     setFormData({
       'planet_name': 'Sample Exoplanet ' + Date.now(),
+      'radius': '2.34',
+      'mass': '5.5',
       'star_distance': '1200',
       'koi_period': '289.864067',
       'koi_period_err1': '0.0008',
