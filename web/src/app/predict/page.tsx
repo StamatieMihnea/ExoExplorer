@@ -205,11 +205,9 @@ export default function PredictPage() {
             </h1>
           </Link>
           <div className="flex gap-4">
-            <Link href="/">
-              <GlassButton>
-                Back to Explorer
-              </GlassButton>
-            </Link>
+            <GlassButton onClick={() => window.location.href = '/'}>
+              Back to Explorer
+            </GlassButton>
           </div>
         </div>
       </div>
