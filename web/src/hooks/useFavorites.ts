@@ -1,10 +1,15 @@
+'use client';
+
 import { useState, useEffect } from 'react';
 import type { Exoplanet } from '@/lib/types';
 
 const FAVORITES_STORAGE_KEY = 'exoplanet-favorites';
 
+/**
+ * Hook for managing favorite exoplanets in localStorage
+ */
 export function useFavorites() {
-  const [favorites, setFavorites] = useState<Set<string>>(new Set());
+  const [favorites, setFavorites] = useState<string[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
 
   // Load favorites from localStorage on mount
@@ -13,11 +18,11 @@ export function useFavorites() {
       const stored = localStorage.getItem(FAVORITES_STORAGE_KEY);
       if (stored) {
         const parsed = JSON.parse(stored);
-        setFavorites(new Set(Array.isArray(parsed) ? parsed : []));
+        setFavorites(Array.isArray(parsed) ? parsed : []);
       }
+      setIsLoaded(true);
     } catch (error) {
-      console.error('Error loading favorites from localStorage:', error);
-    } finally {
+      console.error('Failed to load favorites from localStorage:', error);
       setIsLoaded(true);
     }
   }, []);
@@ -26,62 +31,77 @@ export function useFavorites() {
   useEffect(() => {
     if (isLoaded) {
       try {
-        localStorage.setItem(
-          FAVORITES_STORAGE_KEY,
-          JSON.stringify(Array.from(favorites))
-        );
+        localStorage.setItem(FAVORITES_STORAGE_KEY, JSON.stringify(favorites));
       } catch (error) {
-        console.error('Error saving favorites to localStorage:', error);
+        console.error('Failed to save favorites to localStorage:', error);
       }
     }
   }, [favorites, isLoaded]);
 
-  const addFavorite = (planetId: string) => {
-    setFavorites((prev) => new Set([...prev, planetId]));
+  /**
+   * Check if an exoplanet is favorited
+   */
+  const isFavorite = (exoplanetId: string | undefined): boolean => {
+    if (!exoplanetId) return false;
+    return favorites.includes(exoplanetId);
   };
 
-  const removeFavorite = (planetId: string) => {
+  /**
+   * Toggle favorite status of an exoplanet
+   */
+  const toggleFavorite = (exoplanetId: string | undefined): void => {
+    if (!exoplanetId) return;
+
     setFavorites((prev) => {
-      const next = new Set(prev);
-      next.delete(planetId);
-      return next;
+      if (prev.includes(exoplanetId)) {
+        // Remove from favorites
+        return prev.filter((id) => id !== exoplanetId);
+      } else {
+        // Add to favorites
+        return [...prev, exoplanetId];
+      }
     });
   };
 
-  const toggleFavorite = (planetId: string) => {
-    if (favorites.has(planetId)) {
-      removeFavorite(planetId);
-    } else {
-      addFavorite(planetId);
-    }
+  /**
+   * Add an exoplanet to favorites
+   */
+  const addFavorite = (exoplanetId: string | undefined): void => {
+    if (!exoplanetId || favorites.includes(exoplanetId)) return;
+    setFavorites((prev) => [...prev, exoplanetId]);
   };
 
-  const isFavorite = (planetId: string) => {
-    return favorites.has(planetId);
+  /**
+   * Remove an exoplanet from favorites
+   */
+  const removeFavorite = (exoplanetId: string | undefined): void => {
+    if (!exoplanetId) return;
+    setFavorites((prev) => prev.filter((id) => id !== exoplanetId));
   };
 
-  const getFavoriteIds = () => {
-    return Array.from(favorites);
+  /**
+   * Clear all favorites
+   */
+  const clearFavorites = (): void => {
+    setFavorites([]);
   };
 
-  const clearAllFavorites = () => {
-    setFavorites(new Set());
+  /**
+   * Filter an array of exoplanets to only include favorites
+   */
+  const filterFavorites = (exoplanets: Exoplanet[]): Exoplanet[] => {
+    return exoplanets.filter((planet) => isFavorite(planet._id));
   };
 
   return {
-    favorites: getFavoriteIds(),
+    favorites,
+    isFavorite,
+    toggleFavorite,
     addFavorite,
     removeFavorite,
-    toggleFavorite,
-    isFavorite,
-    clearAllFavorites,
-    favoritesCount: favorites.size,
+    clearFavorites,
+    filterFavorites,
     isLoaded,
   };
-}
-
-// Helper function to get planet identifier
-export function getPlanetId(planet: Exoplanet): string {
-  return planet._id || planet.name;
 }
 

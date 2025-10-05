@@ -1,5 +1,4 @@
 import { GlassCard } from '@/components/ui/GlassCard';
-import { GlassButton } from '@/components/ui/GlassButton';
 
 interface HeaderProps {
   exoplanetsCount: number;
@@ -25,12 +24,6 @@ export function Header({ exoplanetsCount }: HeaderProps) {
           </p>
         </GlassCard>
 
-        {/* Navigation Buttons */}
-        <div className="flex gap-3 pointer-events-auto">
-          <GlassButton>Explore</GlassButton>
-          <GlassButton>Search</GlassButton>
-          <GlassButton>Settings</GlassButton>
-        </div>
       </div>
     </header>
   );

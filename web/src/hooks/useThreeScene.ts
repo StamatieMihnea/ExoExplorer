@@ -27,6 +27,7 @@ interface UseThreeSceneReturn {
   distanceRange: { min: number; max: number } | null;
   navigateToPlanet: (exoplanet: Exoplanet) => void;
   setControlsEnabled: (enabled: boolean) => void;
+  navigateToRandomPlanet: () => void;
 }
 
 export function useThreeScene(): UseThreeSceneReturn {
@@ -86,6 +87,26 @@ export function useThreeScene(): UseThreeSceneReturn {
   const setControlsEnabled = useCallback((enabled: boolean) => {
     if (cameraServiceRef.current) {
       cameraServiceRef.current.setControlsEnabled(enabled);
+    }
+  }, []);
+
+  const navigateToRandomPlanet = useCallback(() => {
+    if (exoplanetsRef.current.length === 0) {
+      console.warn('No exoplanets loaded yet');
+      return;
+    }
+
+    // Get a random exoplanet
+    const randomIndex = Math.floor(Math.random() * exoplanetsRef.current.length);
+    const randomLod = exoplanetsRef.current[randomIndex];
+    const exoplanet = randomLod.userData.exoplanet;
+
+    if (exoplanet && cameraServiceRef.current) {
+      setSelectedExoplanet({
+        position: randomLod.position.clone(),
+        exoplanet: exoplanet,
+      });
+      cameraServiceRef.current.moveToPlanet(randomLod.position);
     }
   }, []);
 
@@ -407,6 +428,7 @@ export function useThreeScene(): UseThreeSceneReturn {
     distanceRange,
     navigateToPlanet,
     setControlsEnabled,
+    navigateToRandomPlanet,
   };
 }
 

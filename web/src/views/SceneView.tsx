@@ -3,12 +3,12 @@
 import { useState } from 'react';
 import { ActionButtons } from '@/components/layout/ActionButtons';
 import { AllPlanetsDialog } from '@/components/layout/AllPlanetsDialog';
-import { FavoritesDialog } from '@/components/layout/FavoritesDialog';
 import { ExoplanetInfoDialog } from '@/components/layout/ExoplanetInfoDialog';
 import { Header } from '@/components/layout/Header';
 import { InfoPanel } from '@/components/layout/InfoPanel';
 import { StatsCard } from '@/components/layout/StatsCard';
 import { SearchInput } from '@/components/layout/SearchInput';
+import { GlassButton } from '@/components/ui/GlassButton';
 import { useThreeScene } from '@/hooks/useThreeScene';
 
 export function SceneView() {
@@ -20,11 +20,12 @@ export function SceneView() {
     exoplanetsCount, 
     distanceRange,
     navigateToPlanet,
-    setControlsEnabled 
+    setControlsEnabled,
+    navigateToRandomPlanet
   } = useThreeScene();
 
   const [showAllPlanets, setShowAllPlanets] = useState(false);
-  const [showFavorites, setShowFavorites] = useState(false);
+  const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
 
   const handleSearchFocusChange = (focused: boolean) => {
     // Disable controls when search is focused, enable when blurred
@@ -65,9 +66,26 @@ export function SceneView() {
           <InfoPanel />
           <ActionButtons 
             onReturnToEarth={returnToEarth}
-            onViewAll={() => setShowAllPlanets(true)}
-            onViewFavorites={() => setShowFavorites(true)}
+            onViewAll={() => {
+              setShowFavoritesOnly(false);
+              setShowAllPlanets(true);
+            }}
+            onViewFavorites={() => {
+              setShowFavoritesOnly(true);
+              setShowAllPlanets(true);
+            }}
           />
+        </div>
+
+        {/* I Feel Lucky Button - Bottom Middle */}
+        <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2">
+          <GlassButton 
+            variant="purple" 
+            onClick={navigateToRandomPlanet}
+            className="pointer-events-auto px-8 py-3 text-lg font-semibold"
+          >
+            🎲 I Feel Lucky
+          </GlassButton>
         </div>
 
         {/* Floating Stats Card */}
@@ -84,16 +102,12 @@ export function SceneView() {
         {/* All Planets Dialog */}
         {showAllPlanets && (
           <AllPlanetsDialog
-            onClose={() => setShowAllPlanets(false)}
+            onClose={() => {
+              setShowAllPlanets(false);
+              setShowFavoritesOnly(false);
+            }}
             onSelectPlanet={navigateToPlanet}
-          />
-        )}
-
-        {/* Favorites Dialog */}
-        {showFavorites && (
-          <FavoritesDialog
-            onClose={() => setShowFavorites(false)}
-            onSelectPlanet={navigateToPlanet}
+            initialShowOnlyFavorites={showFavoritesOnly}
           />
         )}
       </div>

@@ -2,9 +2,8 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { GlassCard } from '@/components/ui/GlassCard';
-import { FavoriteButton } from '@/components/ui/FavoriteButton';
-import { useFavorites, getPlanetId } from '@/hooks/useFavorites';
 import type { Exoplanet } from '@/lib/types';
+import { useFavorites } from '@/hooks/useFavorites';
 
 interface SearchInputProps {
   onSelectPlanet: (exoplanet: Exoplanet) => void;
@@ -21,7 +20,7 @@ export function SearchInput({ onSelectPlanet, onFocusChange }: SearchInputProps)
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const selectedItemRef = useRef<HTMLButtonElement>(null);
-  const { isFavorite, toggleFavorite } = useFavorites();
+  const { isFavorite } = useFavorites();
 
   // Fetch all planets on mount
   useEffect(() => {
@@ -93,10 +92,6 @@ export function SearchInput({ onSelectPlanet, onFocusChange }: SearchInputProps)
     onSelectPlanet(planet);
     // Blur the input to re-enable camera controls
     inputRef.current?.blur();
-  };
-
-  const handleToggleFavorite = (planet: Exoplanet) => {
-    toggleFavorite(getPlanetId(planet));
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -200,37 +195,45 @@ export function SearchInput({ onSelectPlanet, onFocusChange }: SearchInputProps)
         >
           <GlassCard className="overflow-hidden">
             <div className="max-h-80 overflow-y-auto p-2">
-              {filteredPlanets.map((planet, index) => (
-                <div
-                  key={planet._id || planet.name}
-                  className={`flex items-center gap-2 rounded-lg transition-colors ${
-                    index === selectedIndex
-                      ? 'bg-white/20'
-                      : 'hover:bg-white/10'
-                  }`}
-                >
+              {filteredPlanets.map((planet, index) => {
+                const favorite = isFavorite(planet._id);
+                return (
                   <button
+                    key={planet._id || planet.name}
                     ref={index === selectedIndex ? selectedItemRef : null}
                     onClick={() => handleSelectPlanet(planet)}
                     onMouseDown={(e) => e.preventDefault()} // Prevent blur
-                    className="flex-1 text-left px-4 py-3"
+                    className={`w-full text-left px-4 py-3 rounded-lg transition-colors ${
+                      index === selectedIndex
+                        ? 'bg-white/20'
+                        : 'hover:bg-white/10'
+                    }`}
                   >
-                    <div className="font-semibold text-white">{planet.name}</div>
+                    <div className="flex items-center gap-2">
+                      <div className="font-semibold text-white flex-1">{planet.name}</div>
+                      {favorite && (
+                        <svg
+                          className="w-4 h-4 text-yellow-400 flex-shrink-0"
+                          fill="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"
+                          />
+                        </svg>
+                      )}
+                    </div>
                     <div className="text-xs text-white/60 mt-1">
                       {planet.star_name && `Star: ${planet.star_name}`}
                       {planet.star_distance && 
                         ` • ${planet.star_distance.toFixed(1)} ly away`}
                     </div>
                   </button>
-                  <div className="pr-3">
-                    <FavoriteButton
-                      isFavorite={isFavorite(getPlanetId(planet))}
-                      onToggle={() => handleToggleFavorite(planet)}
-                      size="sm"
-                    />
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </GlassCard>
         </div>
