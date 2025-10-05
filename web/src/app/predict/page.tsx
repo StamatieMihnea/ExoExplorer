@@ -11,6 +11,8 @@ interface PredictionResult {
   saved_to_db?: boolean;
   planet_id?: string;
   already_exists?: boolean;
+  db_error?: string;
+  db_error_details?: string;
 }
 
 interface UploadResult {
@@ -24,21 +26,23 @@ interface UploadResult {
 
 // Common exoplanet features for the form
 const FORM_FIELDS = [
-  { name: 'koi_period', label: 'Orbital Period (days)', placeholder: 'e.g., 10.5' },
-  { name: 'koi_time0bk', label: 'Transit Epoch (days)', placeholder: 'e.g., 170.5' },
-  { name: 'koi_impact', label: 'Impact Parameter', placeholder: 'e.g., 0.5' },
-  { name: 'koi_duration', label: 'Transit Duration (hours)', placeholder: 'e.g., 3.5' },
-  { name: 'koi_depth', label: 'Transit Depth (ppm)', placeholder: 'e.g., 1000' },
-  { name: 'koi_prad', label: 'Planetary Radius (Earth radii)', placeholder: 'e.g., 2.5' },
-  { name: 'koi_teq', label: 'Equilibrium Temperature (K)', placeholder: 'e.g., 300' },
-  { name: 'koi_insol', label: 'Insolation Flux (Earth flux)', placeholder: 'e.g., 1.5' },
-  { name: 'koi_model_snr', label: 'Transit Signal-to-Noise', placeholder: 'e.g., 15.5' },
-  { name: 'koi_steff', label: 'Stellar Effective Temperature (K)', placeholder: 'e.g., 5800' },
-  { name: 'koi_slogg', label: 'Stellar Surface Gravity (log10)', placeholder: 'e.g., 4.5' },
-  { name: 'koi_srad', label: 'Stellar Radius (Solar radii)', placeholder: 'e.g., 1.0' },
-  { name: 'ra', label: 'Right Ascension (deg)', placeholder: 'e.g., 290.5' },
-  { name: 'dec', label: 'Declination (deg)', placeholder: 'e.g., 45.2' },
-  { name: 'koi_kepmag', label: 'Kepler Magnitude', placeholder: 'e.g., 12.5' },
+  { name: 'planet_name', label: '🪐 Exoplanet Name', placeholder: 'e.g., Kepler-442b', type: 'text', required: true, fullWidth: true },
+  { name: 'star_distance', label: 'Distance from Earth (light years)', placeholder: 'e.g., 1200', type: 'number' },
+  { name: 'koi_period', label: 'Orbital Period (days)', placeholder: 'e.g., 10.5', type: 'number' },
+  { name: 'koi_time0bk', label: 'Transit Epoch (days)', placeholder: 'e.g., 170.5', type: 'number' },
+  { name: 'koi_impact', label: 'Impact Parameter', placeholder: 'e.g., 0.5', type: 'number' },
+  { name: 'koi_duration', label: 'Transit Duration (hours)', placeholder: 'e.g., 3.5', type: 'number' },
+  { name: 'koi_depth', label: 'Transit Depth (ppm)', placeholder: 'e.g., 1000', type: 'number' },
+  { name: 'koi_prad', label: 'Planetary Radius (Earth radii)', placeholder: 'e.g., 2.5', type: 'number' },
+  { name: 'koi_teq', label: 'Equilibrium Temperature (K)', placeholder: 'e.g., 300', type: 'number' },
+  { name: 'koi_insol', label: 'Insolation Flux (Earth flux)', placeholder: 'e.g., 1.5', type: 'number' },
+  { name: 'koi_model_snr', label: 'Transit Signal-to-Noise', placeholder: 'e.g., 15.5', type: 'number' },
+  { name: 'koi_steff', label: 'Stellar Effective Temperature (K)', placeholder: 'e.g., 5800', type: 'number' },
+  { name: 'koi_slogg', label: 'Stellar Surface Gravity (log10)', placeholder: 'e.g., 4.5', type: 'number' },
+  { name: 'koi_srad', label: 'Stellar Radius (Solar radii)', placeholder: 'e.g., 1.0', type: 'number' },
+  { name: 'ra', label: 'Right Ascension (deg)', placeholder: 'e.g., 290.5', type: 'number' },
+  { name: 'dec', label: 'Declination (deg)', placeholder: 'e.g., 45.2', type: 'number' },
+  { name: 'koi_kepmag', label: 'Kepler Magnitude', placeholder: 'e.g., 12.5', type: 'number' },
 ];
 
 export default function PredictPage() {
@@ -61,12 +65,17 @@ export default function PredictPage() {
     setResult(null);
 
     try {
-      // Convert string values to numbers, keep empty strings as null
+      // Convert string values to numbers for numeric fields, keep text fields as strings
+      const textFields = ['planet_name'];
       const cleanedData: Record<string, any> = {};
       Object.entries(formData).forEach(([key, value]) => {
         if (value === '' || value === undefined) {
           cleanedData[key] = null;
+        } else if (textFields.includes(key)) {
+          // Keep text fields as strings
+          cleanedData[key] = value.trim();
         } else {
+          // Convert numeric fields to numbers
           const numValue = parseFloat(value);
           cleanedData[key] = isNaN(numValue) ? null : numValue;
         }
@@ -89,6 +98,20 @@ export default function PredictPage() {
 
       const data = await response.json();
       console.log('Prediction result:', data);
+      
+      // Log save status for debugging
+      if (data.prediction === 'CONFIRMED' || data.prediction === 'CANDIDATE') {
+        if (data.saved_to_db) {
+          console.log('✅ Planet saved successfully! ID:', data.planet_id);
+          console.log('Planet name:', cleanedData.planet_name);
+          console.log('Status:', data.prediction);
+        } else if (data.already_exists) {
+          console.log('ℹ️ Planet already exists in database');
+        } else if (data.db_error) {
+          console.error('❌ Database error:', data.db_error);
+        }
+      }
+      
       setResult(data);
     } catch (err) {
       console.error('Prediction error:', err);
@@ -132,6 +155,8 @@ export default function PredictPage() {
   const handleFillSample = () => {
     // Good quality exoplanet candidate - targeting ~85% CANDIDATE confidence
     setFormData({
+      'planet_name': 'Sample Exoplanet ' + Date.now(),
+      'star_distance': '1200',
       'koi_period': '289.864067',
       'koi_period_err1': '0.0008',
       'koi_period_err2': '-0.0008',
@@ -258,19 +283,21 @@ export default function PredictPage() {
                   {/* Form Fields */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
                     {FORM_FIELDS.map(field => (
-                      <div key={field.name} className="flex flex-col">
+                      <div key={field.name} className={`flex flex-col ${field.fullWidth ? 'md:col-span-2' : ''}`}>
                         <label 
                           htmlFor={field.name}
                           className="text-sm font-medium text-purple-300 mb-1"
                         >
                           {field.label}
+                          {field.required && <span className="text-red-400 ml-1">*</span>}
                         </label>
                         <input
                           id={field.name}
-                          type="number"
-                          step="any"
+                          type={field.type || 'number'}
+                          step={field.type === 'number' ? 'any' : undefined}
                           value={formData[field.name] || ''}
                           onChange={(e) => handleInputChange(field.name, e.target.value)}
+                          required={field.required}
                           className="px-3 py-2 bg-slate-900/50 border border-purple-500/30 rounded-lg
                                    text-purple-100 placeholder-purple-400/50
                                    focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500
@@ -351,7 +378,7 @@ export default function PredictPage() {
                         <div className="mt-4 p-3 bg-green-900/30 border border-green-500/50 rounded-lg">
                           <p className="text-green-300 text-sm flex items-center gap-2">
                             <span className="text-lg">✅</span>
-                            <span>Confirmed exoplanet saved to database!</span>
+                            <span>{result.prediction} exoplanet saved to database!</span>
                           </p>
                           {result.planet_id && (
                             <p className="text-green-400/80 text-xs mt-1 ml-7">
@@ -367,6 +394,20 @@ export default function PredictPage() {
                             <span className="text-lg">ℹ️</span>
                             <span>This planet already exists in the database</span>
                           </p>
+                        </div>
+                      )}
+
+                      {result.db_error && (
+                        <div className="mt-4 p-3 bg-red-900/30 border border-red-500/50 rounded-lg">
+                          <p className="text-red-300 text-sm flex items-center gap-2">
+                            <span className="text-lg">❌</span>
+                            <span>Database Error: {result.db_error}</span>
+                          </p>
+                          {result.db_error_details && (
+                            <p className="text-red-400/80 text-xs mt-1 ml-7">
+                              {result.db_error_details}
+                            </p>
+                          )}
                         </div>
                       )}
                     </div>
@@ -457,16 +498,19 @@ export default function PredictPage() {
                 </h3>
                 <div className="space-y-3 text-sm text-purple-300/80">
                   <p>
-                    <strong className="text-purple-300">1.</strong> Fill in the exoplanet parameters (or use sample data)
+                    <strong className="text-purple-300">1.</strong> Give your exoplanet a unique name (required *)
                   </p>
                   <p>
-                    <strong className="text-purple-300">2.</strong> Click "Predict" to analyze the data
+                    <strong className="text-purple-300">2.</strong> Fill in the exoplanet parameters (or use sample data)
                   </p>
                   <p>
-                    <strong className="text-purple-300">3.</strong> View the ML model's classification and confidence scores
+                    <strong className="text-purple-300">3.</strong> Click "Predict" to analyze the data
+                  </p>
+                  <p>
+                    <strong className="text-purple-300">4.</strong> If confirmed or candidate, it's automatically saved and searchable!
                   </p>
                   <p className="text-xs text-purple-400/60 pt-2 border-t border-purple-500/20">
-                    Note: All fields are optional. The model will handle missing values automatically.
+                    <strong>Note:</strong> Exoplanet Name is required. Other fields are optional - the ML model will handle missing values automatically.
                   </p>
                 </div>
               </GlassCard>

@@ -72,53 +72,92 @@ export async function POST(request: NextRequest) {
     // Get the JSON data from FastAPI
     const data = await response.json();
 
-    // If this is a prediction endpoint and result is CONFIRMED, save to database
-    if (endpoint === '/predict' && data.prediction === 'CONFIRMED') {
+    console.log('🔷 FastAPI Response:', {
+      endpoint,
+      prediction: data.prediction,
+      willSave: endpoint === '/predict' && (data.prediction === 'CONFIRMED' || data.prediction === 'CANDIDATE')
+    });
+
+    // If this is a prediction endpoint and result is CONFIRMED or CANDIDATE, save to database
+    if (endpoint === '/predict' && (data.prediction === 'CONFIRMED' || data.prediction === 'CANDIDATE')) {
+      console.log('🟣 ENTERING SAVE BLOCK - Will attempt to save to database');
+      console.log('🟣 Prediction:', data.prediction);
+      console.log('🟣 Body received:', JSON.stringify(body, null, 2));
       try {
         const db = await getDatabase();
         const collection = db.collection('exoplanets');
         
-        // Prepare the exoplanet document from the input data
+        // Map form data to exoplanet schema compatible with Three.js scene
+        console.log('🔵 Form data received - planet_name:', body.planet_name);
+        
         const exoplanetDoc: any = {
-          planet_status: 'CONFIRMED',
-          ...body,
+          // Required fields for the scene
+          name: body.planet_name || `Exoplanet-${Date.now()}`,
+          radius: body.koi_prad || null,  // Map koi_prad to radius
+          mass: body.koi_mass || null,
+          temp_calculated: body.koi_teq || null,  // Map koi_teq to temp_calculated
+          
+          // Star properties (required for scene positioning)
+          star_name: body.star_name || null,
+          star_distance: body.star_distance || 1000,  // Default 1000 light years if not provided
+          star_radius: body.koi_srad || null,
+          star_mass: body.koi_smass || null,
+          star_age: body.koi_sage || null,
+          
+          // Discovery metadata
+          discovered: new Date().getFullYear(),
+          discovery_method: 'Transit',
+          
+          // Store all the raw KOI data for reference
+          koi_data: body,
+          
+          // ML prediction metadata
           ml_prediction: {
             prediction: data.prediction,
             probabilities: data.probabilities,
             predicted_at: new Date().toISOString(),
-          }
+          },
+          
+          // Status and timestamps
+          planet_status: data.prediction, // Either 'CONFIRMED' or 'CANDIDATE'
+          created_at: new Date().toISOString(),
+          added_via_ml: true,
         };
         
-        // Check if a planet with this data already exists
-        // We can use a combination of unique fields to identify duplicates
+        console.log('🔵 Prepared document with name:', exoplanetDoc.name);
+        
+        // Check if a planet with this name already exists
         const existingPlanet = await collection.findOne({
-          $or: [
-            { name: body.name },
-            {
-              koi_period: body.koi_period,
-              koi_depth: body.koi_depth,
-              star_name: body.star_name
-            }
-          ]
+          name: exoplanetDoc.name
         });
         
         if (!existingPlanet) {
           // Insert new confirmed planet
+          console.log('🟢 Inserting planet to database...');
           const result = await collection.insertOne(exoplanetDoc);
-          console.log('Saved confirmed planet to database:', result.insertedId);
+          console.log('✅ SUCCESS! Saved confirmed planet to database!');
+          console.log('   - Planet ID:', result.insertedId);
+          console.log('   - Planet Name:', exoplanetDoc.name);
+          console.log('   - Radius:', exoplanetDoc.radius);
+          console.log('   - Distance:', exoplanetDoc.star_distance);
           
           // Add database info to response
           data.saved_to_db = true;
           data.planet_id = result.insertedId.toString();
         } else {
-          console.log('Planet already exists in database:', existingPlanet._id);
+          console.log('🟡 Planet already exists in database');
+          console.log('   - Existing ID:', existingPlanet._id);
+          console.log('   - Name:', existingPlanet.name);
           data.saved_to_db = false;
           data.already_exists = true;
           data.planet_id = existingPlanet._id.toString();
         }
       } catch (dbError) {
-        console.error('Error saving to database:', dbError);
+        console.error('❌ Error saving to database:', dbError);
+        console.error('❌ Error details:', dbError instanceof Error ? dbError.message : 'Unknown error');
+        console.error('❌ Stack trace:', dbError instanceof Error ? dbError.stack : 'No stack trace');
         data.db_error = 'Failed to save to database';
+        data.db_error_details = dbError instanceof Error ? dbError.message : 'Unknown error';
       }
     }
 
