@@ -17,9 +17,11 @@ export function SearchInput({ onSelectPlanet, onFocusChange }: SearchInputProps)
   const [isOpen, setIsOpen] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const [isFocused, setIsFocused] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const selectedItemRef = useRef<HTMLButtonElement>(null);
+  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
   const { isFavorite } = useFavorites();
 
   // Fetch all planets on mount
@@ -39,23 +41,72 @@ export function SearchInput({ onSelectPlanet, onFocusChange }: SearchInputProps)
     fetchPlanets();
   }, []);
 
-  // Filter planets based on search term
+  // Search planets using natural language API with debounce
   useEffect(() => {
+    // Clear previous timer
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+
     if (searchTerm.trim() === '') {
       setFilteredPlanets([]);
       setIsOpen(false);
+      setIsLoading(false);
       return;
     }
 
-    const filtered = allPlanets
-      .filter(planet =>
-        planet.name.toLowerCase().includes(searchTerm.toLowerCase())
-      )
-      .slice(0, 50); // Limit to 50 results
+    // Set loading state immediately
+    setIsLoading(true);
 
-    setFilteredPlanets(filtered);
-    setIsOpen(filtered.length > 0);
-    setSelectedIndex(-1);
+    // Debounce the API call
+    debounceTimerRef.current = setTimeout(async () => {
+      try {
+        // Call natural language query API
+        const response = await fetch('/api/query-nl/', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ query: searchTerm }),
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch search results');
+        }
+
+        // Get the array of IDs
+        const planetIds: string[] = await response.json();
+
+        // Filter allPlanets using the returned IDs
+        const filtered = allPlanets.filter(planet =>
+          planet._id && planetIds.includes(planet._id)
+        );
+
+        setFilteredPlanets(filtered);
+        setIsOpen(filtered.length > 0);
+        setSelectedIndex(-1);
+      } catch (error) {
+        console.error('Error searching planets:', error);
+        // Fallback to simple local search on error
+        const filtered = allPlanets
+          .filter(planet =>
+            planet.name.toLowerCase().includes(searchTerm.toLowerCase())
+          )
+          .slice(0, 50);
+        setFilteredPlanets(filtered);
+        setIsOpen(filtered.length > 0);
+        setSelectedIndex(-1);
+      } finally {
+        setIsLoading(false);
+      }
+    }, 500); // 500ms debounce
+
+    // Cleanup function
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+    };
   }, [searchTerm, allPlanets]);
 
   // Handle clicking outside to close dropdown
@@ -87,7 +138,6 @@ export function SearchInput({ onSelectPlanet, onFocusChange }: SearchInputProps)
   }, [selectedIndex]);
 
   const handleSelectPlanet = (planet: Exoplanet) => {
-    setSearchTerm(planet.name);
     setIsOpen(false);
     onSelectPlanet(planet);
     // Blur the input to re-enable camera controls
@@ -187,7 +237,7 @@ export function SearchInput({ onSelectPlanet, onFocusChange }: SearchInputProps)
       </GlassCard>
 
       {/* Autocomplete Dropdown */}
-      {isOpen && (
+      {(isOpen || isLoading) && (
         <div
           ref={dropdownRef}
           className="absolute top-full mt-2 w-full z-50"
@@ -195,45 +245,52 @@ export function SearchInput({ onSelectPlanet, onFocusChange }: SearchInputProps)
         >
           <GlassCard className="overflow-hidden">
             <div className="max-h-80 overflow-y-auto p-2">
-              {filteredPlanets.map((planet, index) => {
-                const favorite = isFavorite(planet._id);
-                return (
-                  <button
-                    key={planet._id || planet.name}
-                    ref={index === selectedIndex ? selectedItemRef : null}
-                    onClick={() => handleSelectPlanet(planet)}
-                    onMouseDown={(e) => e.preventDefault()} // Prevent blur
-                    className={`w-full text-left px-4 py-3 rounded-lg transition-colors ${
-                      index === selectedIndex
-                        ? 'bg-white/20'
-                        : 'hover:bg-white/10'
-                    }`}
-                  >
-                    <div className="flex items-center gap-2">
-                      <div className="font-semibold text-white flex-1">{planet.name}</div>
-                      {favorite && (
-                        <svg
-                          className="w-4 h-4 text-yellow-400 flex-shrink-0"
-                          fill="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"
-                          />
-                        </svg>
-                      )}
-                    </div>
-                    <div className="text-xs text-white/60 mt-1">
-                      {planet.star_name && `Star: ${planet.star_name}`}
-                      {planet.star_distance && 
-                        ` • ${planet.star_distance.toFixed(1)} ly away`}
-                    </div>
-                  </button>
-                );
-              })}
+              {isLoading ? (
+                <div className="px-4 py-8 text-center">
+                  <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
+                  <p className="text-white/60 mt-2">Searching...</p>
+                </div>
+              ) : (
+                filteredPlanets.map((planet, index) => {
+                  const favorite = isFavorite(planet._id);
+                  return (
+                    <button
+                      key={planet._id || planet.name}
+                      ref={index === selectedIndex ? selectedItemRef : null}
+                      onClick={() => handleSelectPlanet(planet)}
+                      onMouseDown={(e) => e.preventDefault()} // Prevent blur
+                      className={`w-full text-left px-4 py-3 rounded-lg transition-colors ${
+                        index === selectedIndex
+                          ? 'bg-white/20'
+                          : 'hover:bg-white/10'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2">
+                        <div className="font-semibold text-white flex-1">{planet.name}</div>
+                        {favorite && (
+                          <svg
+                            className="w-4 h-4 text-yellow-400 flex-shrink-0"
+                            fill="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"
+                            />
+                          </svg>
+                        )}
+                      </div>
+                      <div className="text-xs text-white/60 mt-1">
+                        {planet.star_name && `Star: ${planet.star_name}`}
+                        {planet.star_distance && 
+                          ` • ${planet.star_distance.toFixed(1)} ly away`}
+                      </div>
+                    </button>
+                  );
+                })
+              )}
             </div>
           </GlassCard>
         </div>
