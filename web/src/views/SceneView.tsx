@@ -56,7 +56,7 @@ export function SceneView() {
         <Header exoplanetsCount={exoplanetsCount} />
 
         {/* Search Input at Top Middle */}
-        <div className="absolute top-6 left-1/2 transform -translate-x-1/2 pointer-events-auto z-[10000]">
+        <div className="absolute top-6 left-1/2 transform -translate-x-1/2 pointer-events-auto z-[10000] w-[40vw] max-w-[800px]">
           <SearchInput 
             onSelectPlanet={navigateToPlanet}
             onFocusChange={handleSearchFocusChange}

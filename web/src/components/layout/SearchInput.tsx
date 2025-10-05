@@ -184,7 +184,7 @@ export function SearchInput({ onSelectPlanet, onFocusChange }: SearchInputProps)
   };
 
   return (
-    <div className="relative w-full max-w-md">
+    <div className="relative w-full">
       <GlassCard className="px-4 py-2">
         <div className="flex items-center gap-2">
           {/* Search Icon */}

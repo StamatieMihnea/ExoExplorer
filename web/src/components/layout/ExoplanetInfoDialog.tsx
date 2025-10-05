@@ -39,7 +39,7 @@ export function ExoplanetInfoDialog({ exoplanet, onClose }: ExoplanetInfoDialogP
 
   return (
     <div className="fixed left-6 top-1/2 -translate-y-1/2 z-50 pointer-events-none">
-      <GlassCard className="px-6 py-6 w-[28rem] max-h-[85vh] overflow-hidden pointer-events-auto flex flex-col">
+      <GlassCard className="px-6 py-5 w-[28rem] max-h-[70vh] overflow-hidden pointer-events-auto flex flex-col">
         {/* Header */}
         <div className="flex justify-between items-start mb-4">
           <h2 className="text-white font-bold text-2xl truncate pr-2">{data.name || 'Unknown Exoplanet'}</h2>
@@ -411,8 +411,8 @@ function MassTab({ mass, planetName }: { mass: number; planetName: string }) {
   // Calculate tilt based on mass difference
   const maxTilt = 15; // degrees
   const baseTilt = mass > 1 
-    ? -Math.min(maxTilt, (mass - 1) * 3) 
-    : Math.min(maxTilt, (1 - mass) * 10);
+    ? Math.min(maxTilt, (mass - 1) * 3)  // Planet heavier: positive tilt (planet side down)
+    : -Math.min(maxTilt, (1 - mass) * 10); // Planet lighter: negative tilt (Earth side down)
   const tilt = baseTilt * (animationPhase === 1 ? 1 : 0.85);
 
   return (
@@ -424,19 +424,19 @@ function MassTab({ mass, planetName }: { mass: number; planetName: string }) {
         {/* Scale Container */}
         <div className="relative h-64 flex items-center justify-center">
           {/* Fulcrum Base */}
-          <div className="absolute bottom-8 left-1/2 -translate-x-1/2 w-20 h-4 bg-gray-700 rounded-t-lg shadow-lg" />
+          <div className="absolute bottom-16 left-1/2 -translate-x-1/2 w-20 h-4 bg-gray-700 rounded-t-lg shadow-lg" />
           
           {/* Fulcrum Pole */}
-          <div className="absolute bottom-12 left-1/2 -translate-x-1/2 w-4 h-24 bg-gradient-to-t from-gray-600 to-gray-400 rounded-t-sm shadow-md" />
+          <div className="absolute bottom-20 left-1/2 -translate-x-1/2 w-4 h-24 bg-gradient-to-t from-gray-600 to-gray-400 rounded-t-sm shadow-md" />
           
           {/* Fulcrum Top (Triangle/Pivot) */}
           <div 
-            className="absolute bottom-[8.75rem] left-1/2 -translate-x-1/2 w-0 h-0 border-l-[12px] border-r-[12px] border-b-[16px] border-l-transparent border-r-transparent border-b-gray-300 shadow-sm"
+            className="absolute bottom-[10.75rem] left-1/2 -translate-x-1/2 w-0 h-0 border-l-[12px] border-r-[12px] border-b-[16px] border-l-transparent border-r-transparent border-b-gray-300 shadow-sm"
           />
           
           {/* Rotating Balance System */}
           <div
-            className="absolute bottom-[8.75rem] left-1/2 transition-transform duration-1000 ease-in-out"
+            className="absolute bottom-[10.75rem] left-1/2 transition-transform duration-1000 ease-in-out"
             style={{
               transform: `translateX(-50%) rotate(${tilt}deg)`,
               transformOrigin: 'center center',

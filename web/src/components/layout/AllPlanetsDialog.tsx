@@ -240,7 +240,7 @@ export function AllPlanetsDialog({ onClose, onSelectPlanet, initialShowOnlyFavor
 
                       {/* Planet Info */}
                       <div className="space-y-1 text-sm text-white/60">
-                        {planet.star_distance !== undefined && (
+                        {planet.star_distance !== undefined && planet.star_distance !== null && (
                           <div className="flex justify-between">
                             <span>Distance:</span>
                             <span className="font-mono text-white/80">
@@ -248,7 +248,7 @@ export function AllPlanetsDialog({ onClose, onSelectPlanet, initialShowOnlyFavor
                             </span>
                           </div>
                         )}
-                        {planet.radius !== undefined && (
+                        {planet.radius !== undefined && planet.radius !== null && (
                           <div className="flex justify-between">
                             <span>Radius:</span>
                             <span className="font-mono text-white/80">
@@ -256,7 +256,7 @@ export function AllPlanetsDialog({ onClose, onSelectPlanet, initialShowOnlyFavor
                             </span>
                           </div>
                         )}
-                        {planet.mass !== undefined && (
+                        {planet.mass !== undefined && planet.mass !== null && (
                           <div className="flex justify-between">
                             <span>Mass:</span>
                             <span className="font-mono text-white/80">
@@ -264,7 +264,7 @@ export function AllPlanetsDialog({ onClose, onSelectPlanet, initialShowOnlyFavor
                             </span>
                           </div>
                         )}
-                        {planet.discovered !== undefined && (
+                        {planet.discovered !== undefined && planet.discovered !== null && (
                           <div className="flex justify-between">
                             <span>Discovered:</span>
                             <span className="font-mono text-white/80">
