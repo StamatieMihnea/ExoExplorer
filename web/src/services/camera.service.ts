@@ -122,10 +122,14 @@ export class CameraService {
     );
   }
 
-  moveToPlanet(planetPosition: THREE.Vector3): void {
+  moveToPlanet(planetPosition: THREE.Vector3, planetRadius: number = 5000000): void {
     // Calculate offset to position the planet on the right side of the screen
     // We want the camera to be positioned so the planet appears on the right
-    const distance = 15000000; // Distance from the planet
+    // Distance is calculated based on planet radius to ensure good framing
+    // Larger planets need more distance, smaller planets need less
+    const minDistance = 15000000; // Minimum distance for very small planets
+    const radiusMultiplier = 3; // Distance is 3x the planet radius
+    const distance = Math.max(minDistance, planetRadius * radiusMultiplier);
     
     // Create a direction vector from Earth (origin) to the planet
     const direction = planetPosition.clone().normalize();

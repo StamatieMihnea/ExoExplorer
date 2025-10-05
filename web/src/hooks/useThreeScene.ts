@@ -74,11 +74,16 @@ export function useThreeScene(): UseThreeSceneReturn {
     });
 
     if (lod && cameraServiceRef.current) {
+      const lodExoplanet = lod.userData.exoplanet;
+      // Calculate planet radius in scene units (1 Earth radius = 5M scene units)
+      const EARTH_RADIUS_TO_SCENE_UNITS = 5000000;
+      const planetRadius = (lodExoplanet.radius || 1) * EARTH_RADIUS_TO_SCENE_UNITS;
+      
       setSelectedExoplanet({
         position: lod.position.clone(),
-        exoplanet: lod.userData.exoplanet,
+        exoplanet: lodExoplanet,
       });
-      cameraServiceRef.current.moveToPlanet(lod.position);
+      cameraServiceRef.current.moveToPlanet(lod.position, planetRadius);
     } else {
       console.warn('Planet not found:', exoplanet.name);
     }
@@ -102,11 +107,15 @@ export function useThreeScene(): UseThreeSceneReturn {
     const exoplanet = randomLod.userData.exoplanet;
 
     if (exoplanet && cameraServiceRef.current) {
+      // Calculate planet radius in scene units (1 Earth radius = 5M scene units)
+      const EARTH_RADIUS_TO_SCENE_UNITS = 5000000;
+      const planetRadius = (exoplanet.radius || 1) * EARTH_RADIUS_TO_SCENE_UNITS;
+      
       setSelectedExoplanet({
         position: randomLod.position.clone(),
         exoplanet: exoplanet,
       });
-      cameraServiceRef.current.moveToPlanet(randomLod.position);
+      cameraServiceRef.current.moveToPlanet(randomLod.position, planetRadius);
     }
   }, []);
 
