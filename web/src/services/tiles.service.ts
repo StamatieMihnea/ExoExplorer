@@ -58,12 +58,16 @@ export class TilesService {
 
     // Configure texture filtering for all loaded tiles
     this.tiles.addEventListener('load-tile-set', () => {
-      this.tiles!.group.traverse(obj => fixTextures(obj, maxAnisotropy));
+      if (this.tiles?.group) {
+        this.tiles.group.traverse(obj => fixTextures(obj, maxAnisotropy));
+      }
     });
 
     // Also apply filtering to individual models as they load
     this.tiles.addEventListener('load-model', (event: any) => {
-      event.scene.traverse((obj: any) => fixTextures(obj, maxAnisotropy));
+      if (event?.scene) {
+        event.scene.traverse((obj: any) => fixTextures(obj, maxAnisotropy));
+      }
     });
   }
 
