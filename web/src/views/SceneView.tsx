@@ -30,13 +30,11 @@ export function SceneView() {
   const [showWelcomeModal, setShowWelcomeModal] = useState(true);
 
   const handleSearchFocusChange = (focused: boolean) => {
-    // Disable controls when search is focused, enable when blurred
     setControlsEnabled(!focused);
   };
 
   return (
     <>
-      {/* 3D Scene Container */}
       <div
         ref={containerRef}
         style={{
@@ -50,12 +48,9 @@ export function SceneView() {
         }}
       />
 
-      {/* UI Overlay */}
       <div className="fixed inset-0 pointer-events-none z-50">
-        {/* Top Header */}
         <Header exoplanetsCount={exoplanetsCount} />
 
-        {/* Search Input at Top Middle */}
         <div className="absolute top-6 left-1/2 transform -translate-x-1/2 pointer-events-auto z-[10000] w-[40vw] max-w-[800px]">
           <SearchInput 
             onSelectPlanet={navigateToPlanet}
@@ -63,7 +58,6 @@ export function SceneView() {
           />
         </div>
 
-        {/* Bottom Info Panel and Action Buttons */}
         <div className="absolute bottom-6 left-6 right-6 flex items-end justify-between">
           <InfoPanel />
           <ActionButtons 
@@ -79,7 +73,6 @@ export function SceneView() {
           />
         </div>
 
-        {/* I Feel Lucky Button - Bottom Middle */}
         <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2">
           <GlassButton 
             variant="purple" 
@@ -90,10 +83,8 @@ export function SceneView() {
           </GlassButton>
         </div>
 
-        {/* Floating Stats Card */}
         <StatsCard exoplanetsCount={exoplanetsCount} distanceRange={distanceRange} />
 
-        {/* Exoplanet Info Dialog */}
         {selectedExoplanet && (
           <ExoplanetInfoDialog
             exoplanet={selectedExoplanet}
@@ -101,7 +92,6 @@ export function SceneView() {
           />
         )}
 
-        {/* All Planets Dialog */}
         {showAllPlanets && (
           <AllPlanetsDialog
             onClose={() => {
@@ -114,7 +104,6 @@ export function SceneView() {
         )}
       </div>
 
-      {/* Welcome Modal - Outside pointer-events-none container */}
       {showWelcomeModal && (
         <WelcomeModal onClose={() => setShowWelcomeModal(false)} />
       )}

@@ -52,7 +52,6 @@ export class CameraService {
     domElement.addEventListener('mousemove', onMouseMove, true);
     domElement.addEventListener('contextmenu', onContextMenu);
 
-    // Return cleanup function
     return () => {
       domElement.removeEventListener('mousedown', onMouseDown, true);
       domElement.removeEventListener('mouseup', onMouseUp, true);
@@ -123,30 +122,21 @@ export class CameraService {
   }
 
   moveToPlanet(planetPosition: THREE.Vector3, planetRadius: number = 5000000): void {
-    // Calculate offset to position the planet on the right side of the screen
-    // We want the camera to be positioned so the planet appears on the right
-    // Distance is calculated based on planet radius to ensure good framing
-    // Larger planets need more distance, smaller planets need less
-    const minDistance = 15000000; // Minimum distance for very small planets
-    const radiusMultiplier = 3; // Distance is 3x the planet radius
+    const minDistance = 15000000;
+    const radiusMultiplier = 3;
     const distance = Math.max(minDistance, planetRadius * radiusMultiplier);
     
-    // Create a direction vector from Earth (origin) to the planet
     const direction = planetPosition.clone().normalize();
     
-    // Calculate the camera position offset to the left of the planet
-    // (so planet appears on the right side of screen)
     const rightOffset = new THREE.Vector3()
       .crossVectors(direction, new THREE.Vector3(0, 1, 0))
       .normalize()
-      .multiplyScalar(distance * 0.6); // Offset to the left
+      .multiplyScalar(distance * 0.6);
     
-    // Position camera closer to the planet, offset to the left
     const cameraPosition = planetPosition.clone()
-      .add(direction.multiplyScalar(-distance)) // Move back from planet
-      .add(rightOffset); // Offset to the left
+      .add(direction.multiplyScalar(-distance))
+      .add(rightOffset);
     
-    // Calculate rotation to look at the planet
     const tempCamera = new THREE.PerspectiveCamera();
     tempCamera.position.copy(cameraPosition);
     tempCamera.lookAt(planetPosition);

@@ -1,44 +1,6 @@
 import * as THREE from 'three';
 import type { Exoplanet } from '@/lib/types';
 
-/**
- * Scientifically Accurate Exoplanet Texture Generator (Performance Optimized)
- * 
- * This module generates procedural textures for exoplanets based on real astronomical
- * classification and observational data. The textures are informed by:
- * 
- * 1. Planet Classification:
- *    - Uses mass-radius relationships to determine composition (rocky vs gaseous)
- *    - Classifies into: Hot Jupiters, Ice Giants, Mini-Neptunes, Super-Earths, Terrestrial
- * 
- * 2. Temperature-Dependent Appearance:
- *    - Hot Jupiters (>1000K): Dark atmospheres with thermal emission, sodium absorption
- *    - Ice Giants (<500K): Methane absorption creates Neptune/Uranus-like blue colors
- *    - Temperate (200-400K): Earth-like features with potential liquid water
- *    - Lava worlds (>700K): Molten surfaces with glowing patterns
- * 
- * 3. Atmospheric Physics:
- *    - Gas giants: Atmospheric banding from high-altitude winds (like Jupiter)
- *    - Storm systems: Based on observed features (Great Red Spot, Great Dark Spot)
- *    - Cloud coverage: Depends on temperature and composition
- * 
- * 4. Surface Features (Rocky planets):
- *    - Water distribution based on habitable zone position
- *    - Desert, ocean, or balanced Earth-like compositions
- *    - Frozen surfaces for cold planets
- * 
- * Performance Optimizations:
- * - Texture caching to ensure each planet texture is generated only once
- * - Reduced pixel iteration for low-res textures
- * - Optimized noise functions
- * 
- * References:
- * - NASA Exoplanet Archive classification schemes
- * - Observational data from JWST, Hubble, and ground-based telescopes
- * - Atmospheric models from exoplanet science literature
- */
-
-// Global cache for generated textures - ensures each planet texture is computed only once
 const textureCache = new Map<string, THREE.Texture>();
 const simpleTextureCache = new Map<string, THREE.Texture>();
 
@@ -55,85 +17,64 @@ enum PlanetType {
   ICE_GIANT = 'ice_giant',          // Neptune-like, T < 500K
   SUPER_EARTH = 'super_earth',      // Rocky, R > 1.5 Earth radii
   TERRESTRIAL = 'terrestrial',      // Rocky, Earth-sized or smaller
-  MINI_NEPTUNE = 'mini_neptune',    // Small gas planet
+  MINI_NEPTUNE = 'mini_neptune',
 }
 
-// Earth constants for reference
-const EARTH_MASS = 1.0;  // Earth masses
-const EARTH_RADIUS = 1.0; // Earth radii
-const JUPITER_MASS = 317.8; // Earth masses
-const JUPITER_RADIUS = 11.2; // Earth radii
-const NEPTUNE_MASS = 17.1; // Earth masses
-const NEPTUNE_RADIUS = 3.88; // Earth radii
+const EARTH_MASS = 1.0;
+const EARTH_RADIUS = 1.0;
+const JUPITER_MASS = 317.8;
+const JUPITER_RADIUS = 11.2;
+const NEPTUNE_MASS = 17.1;
+const NEPTUNE_RADIUS = 3.88;
 
-/**
- * Classify planet type based on physical properties
- * Uses scientific criteria from exoplanet research
- */
 function classifyPlanet(exoplanet: Exoplanet): PlanetType {
   const mass = exoplanet.mass || EARTH_MASS;
   const radius = exoplanet.radius || EARTH_RADIUS;
   const temp = exoplanet.temp_calculated || exoplanet.temp_measured || 300;
   
-  // Calculate density (relative to Earth)
   const density = mass / (radius * radius * radius);
   
-  // Hot Jupiter: Large, low density, very hot
   if (radius > 8 && temp > 1000 && density < 0.4) {
     return PlanetType.HOT_JUPITER;
   }
   
-  // Warm Neptune: Neptune-sized, warm
   if (radius > 3 && radius < 8 && temp > 500 && temp < 1000 && density < 0.8) {
     return PlanetType.WARM_NEPTUNE;
   }
   
-  // Ice Giant: Neptune-like, cold, low density
   if (radius > 3 && temp < 500 && density < 0.8) {
     return PlanetType.ICE_GIANT;
   }
   
-  // Mini-Neptune: Small gas planet (between Earth and Neptune)
   if (radius > 1.5 && radius < 4 && density < 1.2) {
     return PlanetType.MINI_NEPTUNE;
   }
   
-  // Super-Earth: Large rocky planet
   if (radius > 1.5 && density >= 1.2) {
     return PlanetType.SUPER_EARTH;
   }
   
-  // Terrestrial: Earth-sized rocky planet
   return PlanetType.TERRESTRIAL;
 }
 
-/**
- * Get scientifically accurate colors based on planet type and temperature
- * Based on atmospheric composition and thermal emission
- */
 function getScientificColors(exoplanet: Exoplanet, planetType: PlanetType): PlanetColors {
   const temp = exoplanet.temp_calculated || exoplanet.temp_measured || 300;
   
   switch (planetType) {
     case PlanetType.HOT_JUPITER:
-      // Hot Jupiters: Very hot, thermal emission dominates
-      // Appear dark with sodium/potassium absorption, possibly red-brown from aerosols
       if (temp > 2000) {
-        // Ultra-hot: Thermal emission, appears dark with glowing edges
         return {
           base: '#5a3820',
           secondary: '#3d2510',
           accent: '#8a5530',
         };
       } else if (temp > 1500) {
-        // Very hot: Dark with reddish tint from clouds
         return {
           base: '#6a4530',
           secondary: '#4a3020',
           accent: '#9a6540',
         };
       } else {
-        // Hot: Dark brown/gray from high altitude clouds
         return {
           base: '#7a5840',
           secondary: '#5a4030',
@@ -142,8 +83,6 @@ function getScientificColors(exoplanet: Exoplanet, planetType: PlanetType): Plan
       }
     
     case PlanetType.WARM_NEPTUNE:
-      // Warm Neptunes: May have water clouds, less methane
-      // Appear lighter blue or cyan-white
       return {
         base: '#8bc5e8',
         secondary: '#6ba3d0',

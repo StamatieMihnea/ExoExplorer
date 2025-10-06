@@ -4,11 +4,10 @@ import { getRandomPointOnSphere } from '@/utils/math.utils';
 import type { ExoplanetConfig } from '@/types/scene.types';
 import type { Exoplanet } from '@/lib/types';
 
-// Conversion factors
-const LIGHT_YEAR_TO_SCENE_UNITS = 25000000; // 1 light year = 25M scene units (increased for more dispersion)
-const EARTH_RADIUS_TO_SCENE_UNITS = 5000000; // 1 Earth radius = 5M scene units
-const DEFAULT_DISTANCE = 100; // Default distance in light years if not available
-const DEFAULT_RADIUS = 1; // Default radius in Earth radii if not available
+const LIGHT_YEAR_TO_SCENE_UNITS = 25000000;
+const EARTH_RADIUS_TO_SCENE_UNITS = 5000000;
+const DEFAULT_DISTANCE = 100;
+const DEFAULT_RADIUS = 1;
 
 export interface ExoplanetLOD extends THREE.LOD {
   userData: {
@@ -40,7 +39,6 @@ export class ExoplanetsService {
   }
 
   async createExoplanets(): Promise<ExoplanetLOD[]> {
-    // Fetch exoplanets from API
     const exoplanetsData = await this.fetchExoplanets();
     
     if (exoplanetsData.length === 0) {
@@ -48,7 +46,6 @@ export class ExoplanetsService {
       return [];
     }
 
-    // Create exoplanets from fetched data with collision detection
     const exoplanets: ExoplanetLOD[] = [];
     const placedPlanets: Array<{ position: THREE.Vector3; radius: number }> = [];
     
@@ -56,7 +53,6 @@ export class ExoplanetsService {
       const lod = this.createExoplanet(exoplanetData, placedPlanets);
       exoplanets.push(lod);
       
-      // Track this planet's position and radius for future collision checks
       const radius = (exoplanetData.radius || DEFAULT_RADIUS) * EARTH_RADIUS_TO_SCENE_UNITS;
       placedPlanets.push({
         position: lod.position.clone(),
@@ -74,10 +70,8 @@ export class ExoplanetsService {
     const lod = new THREE.LOD() as ExoplanetLOD;
     const planetId = exoplanetData._id || exoplanetData.name;
 
-    // Calculate size based on radius (in Earth radii)
     const radius = (exoplanetData.radius || DEFAULT_RADIUS) * EARTH_RADIUS_TO_SCENE_UNITS;
     
-    // Create geometries for this specific exoplanet's size if not cached
     const radiusKey = Math.round(radius);
     if (!this.geometries.has(radiusKey)) {
       const geometries = this.config.lodLevels.map(
@@ -88,29 +82,24 @@ export class ExoplanetsService {
     
     const geometries = this.geometries.get(radiusKey)!;
 
-    // Create materials for this planet (one per LOD level)
-    // Start with no texture - will be added by TextureManager
-    // Add subtle emissive glow for visual appeal
     const materials = this.config.lodLevels.map(() => {
       return new THREE.MeshStandardMaterial({
-        color: 0xffffff, // White to not tint the texture
-        roughness: 0.35,   // Lower roughness for brighter appearance
-        metalness: 0.05,   // Very low metalness for more diffuse reflection
+        color: 0xffffff,
+        roughness: 0.35,
+        metalness: 0.05,
         flatShading: false,
-        emissive: 0x111122, // Subtle blue glow
+        emissive: 0x111122,
         emissiveIntensity: 0.08,
       });
     });
     
     this.materials.set(planetId, materials);
 
-    // Store exoplanet data and materials in userData
     lod.userData = { 
       exoplanet: exoplanetData,
       materials,
     };
 
-    // Add LOD levels with individual materials
     this.config.lodLevels.forEach((level, index) => {
       const mesh = new THREE.Mesh(geometries[index], materials[index]);
       mesh.updateMatrix();
@@ -118,10 +107,8 @@ export class ExoplanetsService {
       lod.addLevel(mesh, level.distance);
     });
 
-    // Position exoplanet based on star_distance (in light years)
     const distance = (exoplanetData.star_distance || DEFAULT_DISTANCE) * LIGHT_YEAR_TO_SCENE_UNITS;
     
-    // Find a non-overlapping position with collision detection
     const position = this.findNonOverlappingPosition(distance, radius, placedPlanets);
     lod.position.copy(position);
     lod.updateMatrix();
@@ -130,23 +117,18 @@ export class ExoplanetsService {
     return lod;
   }
 
-  /**
-   * Find a non-overlapping position for a planet
-   * Uses collision detection to ensure planets don't overlap
-   */
   private findNonOverlappingPosition(
     distance: number,
     radius: number,
     placedPlanets: Array<{ position: THREE.Vector3; radius: number }>
   ): THREE.Vector3 {
     const MAX_ATTEMPTS = 100;
-    const MIN_SEPARATION_MULTIPLIER = 2.5; // Minimum separation is 2.5x the sum of radii
+    const MIN_SEPARATION_MULTIPLIER = 2.5;
     
     for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
       const candidatePosition = getRandomPointOnSphere(distance);
       let hasCollision = false;
       
-      // Check collision with all previously placed planets
       for (const placed of placedPlanets) {
         const distanceBetween = candidatePosition.distanceTo(placed.position);
         const minDistance = (radius + placed.radius) * MIN_SEPARATION_MULTIPLIER;

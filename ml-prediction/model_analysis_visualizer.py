@@ -1,8 +1,3 @@
-"""
-Enhanced Model Analysis and Visualization
-Creates comprehensive graphs for exoplanet classifier performance analysis
-"""
-
 import pandas as pd
 import numpy as np
 import torch
@@ -15,11 +10,9 @@ from sklearn.calibration import calibration_curve
 import pickle
 from torch.utils.data import DataLoader, TensorDataset
 
-# Set style
 plt.style.use('seaborn-v0_8-darkgrid')
 sns.set_palette("husl")
 
-# Import the model class
 import sys
 sys.path.append('.')
 from exoplanet_classifier import ExoplanetClassifier, ExoplanetDataPreprocessor
@@ -28,7 +21,6 @@ print("="*80)
 print("EXOPLANET CLASSIFIER - COMPREHENSIVE ANALYSIS")
 print("="*80)
 
-# Load preprocessor and model
 print("\n[1] Loading model and preprocessor...")
 with open('preprocessor.pkl', 'rb') as f:
     preprocessor_data = pickle.load(f)
@@ -39,30 +31,25 @@ feature_names = preprocessor_data['feature_names']
 
 print(f"Loaded {len(feature_names)} features")
 
-# Load and preprocess data
 print("\n[2] Loading and preprocessing data...")
 preprocessor = ExoplanetDataPreprocessor('data/cumulative_2025.10.04_02.38.51.csv')
 df = preprocessor.load_data()
 X, y, _ = preprocessor.preprocess(df)
 
-# Use same train-test split (with same random seed)
 from sklearn.model_selection import train_test_split
 X_train, X_test, y_train, y_test = train_test_split(
     X, y, test_size=0.2, random_state=42, stratify=y
 )
 
-# Load model
 model = ExoplanetClassifier(input_dim=X_train.shape[1])
 model.load_state_dict(torch.load('exoplanet_classifier.pth'))
 model.eval()
 
 print(f"Train set: {X_train.shape}, Test set: {X_test.shape}")
 
-# Create dataloaders
 test_dataset = TensorDataset(torch.FloatTensor(X_test), torch.LongTensor(y_test))
 test_loader = DataLoader(test_dataset, batch_size=64, shuffle=False)
 
-# Get predictions and probabilities
 print("\n[3] Generating predictions...")
 all_preds = []
 all_probs = []
@@ -81,13 +68,10 @@ y_probs = np.array(all_probs)
 
 print(f"Generated predictions for {len(y_pred)} samples")
 
-# Create comprehensive visualizations
 print("\n[4] Creating visualizations...")
 
-# Figure 1: ROC Curve and PR Curve
 fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 6))
 
-# ROC Curve
 fpr, tpr, thresholds_roc = roc_curve(y_test, y_probs[:, 1])
 roc_auc = auc(fpr, tpr)
 
@@ -102,7 +86,6 @@ ax1.set_title('ROC Curve - Model Discrimination Power', fontsize=16, fontweight=
 ax1.legend(loc="lower right", fontsize=12)
 ax1.grid(True, alpha=0.3)
 
-# Precision-Recall Curve
 precision, recall, thresholds_pr = precision_recall_curve(y_test, y_probs[:, 1])
 pr_auc = auc(recall, precision)
 
@@ -122,13 +105,11 @@ plt.savefig('roc_pr_curves.png', dpi=300, bbox_inches='tight')
 print("✓ Saved: roc_pr_curves.png")
 plt.close()
 
-# Figure 2: Confusion Matrix with Percentages
 fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 6))
 
 cm = confusion_matrix(y_test, y_pred)
 cm_normalized = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
 
-# Absolute counts
 sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', ax=ax1, cbar_kws={'label': 'Count'},
             xticklabels=label_encoder.classes_, yticklabels=label_encoder.classes_,
             annot_kws={'size': 16, 'weight': 'bold'})
@@ -136,7 +117,6 @@ ax1.set_xlabel('Predicted Label', fontsize=14, fontweight='bold')
 ax1.set_ylabel('True Label', fontsize=14, fontweight='bold')
 ax1.set_title('Confusion Matrix - Absolute Counts', fontsize=16, fontweight='bold')
 
-# Percentages
 sns.heatmap(cm_normalized, annot=True, fmt='.2%', cmap='Greens', ax=ax2, 
             cbar_kws={'label': 'Percentage'},
             xticklabels=label_encoder.classes_, yticklabels=label_encoder.classes_,
@@ -150,10 +130,8 @@ plt.savefig('confusion_matrices_detailed.png', dpi=300, bbox_inches='tight')
 print("✓ Saved: confusion_matrices_detailed.png")
 plt.close()
 
-# Figure 3: Prediction Confidence Distribution
 fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(16, 12))
 
-# Overall confidence distribution
 confidence_scores = np.max(y_probs, axis=1)
 ax1.hist(confidence_scores, bins=50, color='steelblue', edgecolor='black', alpha=0.7)
 ax1.axvline(x=0.5, color='red', linestyle='--', linewidth=2, label='Decision Threshold')
@@ -163,7 +141,6 @@ ax1.set_title('Overall Prediction Confidence Distribution', fontsize=14, fontwei
 ax1.legend(fontsize=11)
 ax1.grid(True, alpha=0.3)
 
-# Confidence by class
 candidate_probs = y_probs[y_test == 0, 0]
 false_pos_probs = y_probs[y_test == 1, 1]
 
@@ -177,7 +154,6 @@ ax2.set_title('Confidence Distribution by True Class', fontsize=14, fontweight='
 ax2.legend(fontsize=11)
 ax2.grid(True, alpha=0.3)
 
-# Correct vs Incorrect predictions
 correct_mask = (y_pred == y_test)
 correct_conf = confidence_scores[correct_mask]
 incorrect_conf = confidence_scores[~correct_mask]
@@ -192,7 +168,6 @@ ax3.set_title('Confidence: Correct vs Incorrect Predictions', fontsize=14, fontw
 ax3.legend(fontsize=11)
 ax3.grid(True, alpha=0.3)
 
-# Box plot comparison
 data_for_box = [correct_conf, incorrect_conf]
 bp = ax4.boxplot(data_for_box, labels=['Correct', 'Incorrect'], 
                  patch_artist=True, widths=0.6)
@@ -210,10 +185,8 @@ plt.savefig('confidence_analysis.png', dpi=300, bbox_inches='tight')
 print("✓ Saved: confidence_analysis.png")
 plt.close()
 
-# Figure 4: Calibration Curve
 fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 6))
 
-# Calibration curve for class 1 (FALSE POSITIVE)
 fraction_of_positives, mean_predicted_value = calibration_curve(
     y_test, y_probs[:, 1], n_bins=10, strategy='uniform'
 )
@@ -227,7 +200,6 @@ ax1.set_title('Calibration Curve (Reliability Diagram)', fontsize=16, fontweight
 ax1.legend(loc='lower right', fontsize=12)
 ax1.grid(True, alpha=0.3)
 
-# Calibration by bins
 bins = np.linspace(0, 1, 11)
 bin_indices = np.digitize(y_probs[:, 1], bins) - 1
 bin_accuracy = []
@@ -271,11 +243,9 @@ plt.savefig('calibration_analysis.png', dpi=300, bbox_inches='tight')
 print("✓ Saved: calibration_analysis.png")
 plt.close()
 
-# Figure 5: Error Analysis by Confidence
 fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(16, 12))
 
-# False Positives (Type I errors)
-type1_mask = (y_test == 1) & (y_pred == 0)  # Actually FP, predicted Candidate
+type1_mask = (y_test == 1) & (y_pred == 0)
 type1_conf = confidence_scores[type1_mask]
 
 ax1.hist(type1_conf, bins=20, color='#e67e22', edgecolor='black', alpha=0.7)
@@ -288,8 +258,7 @@ ax1.set_title(f'Type I Errors: False Alarms (n={type1_mask.sum()})',
 ax1.legend(fontsize=11)
 ax1.grid(True, alpha=0.3)
 
-# False Negatives (Type II errors)
-type2_mask = (y_test == 0) & (y_pred == 1)  # Actually Candidate, predicted FP
+type2_mask = (y_test == 0) & (y_pred == 1)
 type2_conf = confidence_scores[type2_mask]
 
 ax2.hist(type2_conf, bins=20, color='#9b59b6', edgecolor='black', alpha=0.7)
@@ -302,7 +271,6 @@ ax2.set_title(f'Type II Errors: Missed Candidates (n={type2_mask.sum()})',
 ax2.legend(fontsize=11)
 ax2.grid(True, alpha=0.3)
 
-# Error type comparison
 error_types = ['Type I\n(False Alarms)', 'Type II\n(Missed Planets)']
 error_counts = [type1_mask.sum(), type2_mask.sum()]
 colors_err = ['#e67e22', '#9b59b6']
@@ -313,14 +281,12 @@ ax3.set_ylabel('Number of Errors', fontsize=12, fontweight='bold')
 ax3.set_title('Error Type Distribution', fontsize=14, fontweight='bold')
 ax3.grid(True, alpha=0.3, axis='y')
 
-# Add value labels on bars
 for bar, count in zip(bars, error_counts):
     height = bar.get_height()
     ax3.text(bar.get_x() + bar.get_width()/2., height,
              f'{int(count)}',
              ha='center', va='bottom', fontsize=14, fontweight='bold')
 
-# Threshold sensitivity analysis
 thresholds = np.linspace(0.3, 0.7, 20)
 accuracies = []
 type1_errors = []
@@ -352,7 +318,6 @@ ax4_twin.set_ylabel('Error Count', fontsize=12, fontweight='bold')
 ax4.set_title('Threshold Sensitivity Analysis', fontsize=14, fontweight='bold')
 ax4.grid(True, alpha=0.3)
 
-# Combine legends
 lines1, labels1 = ax4.get_legend_handles_labels()
 lines2, labels2 = ax4_twin.get_legend_handles_labels()
 ax4.legend(lines1 + lines2, labels1 + labels2, loc='lower left', fontsize=10)
@@ -362,10 +327,8 @@ plt.savefig('error_analysis.png', dpi=300, bbox_inches='tight')
 print("✓ Saved: error_analysis.png")
 plt.close()
 
-# Figure 6: Class-wise Performance Metrics
 fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(16, 12))
 
-# Metrics by class
 from sklearn.metrics import precision_score, recall_score, f1_score
 
 classes = label_encoder.classes_
@@ -391,7 +354,6 @@ ax1.legend(fontsize=11)
 ax1.set_ylim([0.75, 1.0])
 ax1.grid(True, alpha=0.3, axis='y')
 
-# Add value labels
 for bars in [bars1, bars2, bars3]:
     for bar in bars:
         height = bar.get_height()
@@ -399,7 +361,6 @@ for bars in [bars1, bars2, bars3]:
                 f'{height:.3f}',
                 ha='center', va='bottom', fontsize=9, fontweight='bold')
 
-# Sample distribution
 train_dist = np.bincount(y_train)
 test_dist = np.bincount(y_test)
 
@@ -418,7 +379,6 @@ ax2.set_xticklabels(classes, fontsize=11)
 ax2.legend(fontsize=11)
 ax2.grid(True, alpha=0.3, axis='y')
 
-# Support (number of samples per class in test set)
 support = [np.sum(y_test == i) for i in range(2)]
 correct = [np.sum((y_test == i) & (y_pred == i)) for i in range(2)]
 incorrect = [support[i] - correct[i] for i in range(2)]
@@ -436,7 +396,6 @@ ax3.set_xticklabels(classes, fontsize=11)
 ax3.legend(fontsize=11)
 ax3.grid(True, alpha=0.3, axis='y')
 
-# Overall metrics summary
 metrics_names = ['Accuracy', 'Precision\n(Weighted)', 'Recall\n(Weighted)', 
                  'F1-Score\n(Weighted)', 'ROC-AUC']
 metrics_values = [
@@ -456,7 +415,6 @@ ax4.set_title('Overall Model Performance Summary', fontsize=14, fontweight='bold
 ax4.set_xlim([0.8, 1.0])
 ax4.grid(True, alpha=0.3, axis='x')
 
-# Add value labels
 for bar, value in zip(bars, metrics_values):
     width = bar.get_width()
     ax4.text(width, bar.get_y() + bar.get_height()/2.,
@@ -469,7 +427,6 @@ plt.savefig('class_performance_summary.png', dpi=300, bbox_inches='tight')
 print("✓ Saved: class_performance_summary.png")
 plt.close()
 
-# Print summary statistics
 print("\n" + "="*80)
 print("ANALYSIS SUMMARY")
 print("="*80)
@@ -479,7 +436,7 @@ print(f"Incorrect Predictions: {(y_pred != y_test).sum()} ({(y_pred != y_test).m
 print(f"\nType I Errors (False Alarms): {type1_mask.sum()}")
 print(f"Type II Errors (Missed Candidates): {type2_mask.sum()}")
 print(f"\nAverage Confidence (Correct): {np.mean(correct_conf):.4f}")
-print(f"Average Confidence (Incorrect): {np.mean(incorrect_conf):.4f}")
+print(f"\nAverage Confidence (Incorrect): {np.mean(incorrect_conf):.4f}")
 print(f"\nROC-AUC Score: {roc_auc:.4f}")
 print(f"PR-AUC Score: {pr_auc:.4f}")
 

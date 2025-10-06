@@ -1,18 +1,4 @@
 #!/usr/bin/env python3
-"""
-Exoplanet Texture Generator - Backend Version
-
-Generates scientifically accurate procedural textures for exoplanets and stores them
-in MongoDB with Base64 encoding or uploads to cloud storage (S3/CloudFlare R2).
-
-This script mirrors the logic from the frontend texture generator but runs server-side
-for better performance and one-time generation.
-
-Usage:
-    python generate_textures.py --mode local    # Store as Base64 in MongoDB
-    python generate_textures.py --mode s3       # Upload to S3 and store URLs
-    python generate_textures.py --limit 100     # Generate for first 100 planets only
-"""
 
 import argparse
 import base64
@@ -26,12 +12,10 @@ from PIL import Image, ImageDraw, ImageFilter
 from pymongo import MongoClient
 from datetime import datetime
 
-# Configuration
 MONGODB_URI = "mongodb://localhost:27017/"
 DATABASE_NAME = "exoplanet_explorer"
 COLLECTION_NAME = "exoplanets"
 
-# Planet classification
 class PlanetType(Enum):
     HOT_JUPITER = "hot_jupiter"
     WARM_NEPTUNE = "warm_neptune"
@@ -40,7 +24,6 @@ class PlanetType(Enum):
     TERRESTRIAL = "terrestrial"
     MINI_NEPTUNE = "mini_neptune"
 
-# Constants
 EARTH_MASS = 1.0
 EARTH_RADIUS = 1.0
 JUPITER_MASS = 317.8
@@ -50,40 +33,31 @@ NEPTUNE_RADIUS = 3.88
 
 
 def classify_planet(exoplanet: dict) -> PlanetType:
-    """Classify planet type based on physical properties"""
     mass = exoplanet.get('mass', EARTH_MASS)
     radius = exoplanet.get('radius', EARTH_RADIUS)
     temp = exoplanet.get('temp_calculated') or exoplanet.get('temp_measured') or 300
     
-    # Calculate density (relative to Earth)
     density = mass / (radius ** 3)
     
-    # Hot Jupiter: Large, low density, very hot
     if radius > 8 and temp > 1000 and density < 0.4:
         return PlanetType.HOT_JUPITER
     
-    # Warm Neptune: Neptune-sized, warm
     if 3 < radius < 8 and 500 < temp < 1000 and density < 0.8:
         return PlanetType.WARM_NEPTUNE
     
-    # Ice Giant: Neptune-like, cold, low density
     if radius > 3 and temp < 500 and density < 0.8:
         return PlanetType.ICE_GIANT
     
-    # Mini-Neptune: Small gas planet
     if 1.5 < radius < 4 and density < 1.2:
         return PlanetType.MINI_NEPTUNE
     
-    # Super-Earth: Large rocky planet
     if radius > 1.5 and density >= 1.2:
         return PlanetType.SUPER_EARTH
     
-    # Terrestrial: Earth-sized rocky planet
     return PlanetType.TERRESTRIAL
 
 
 def get_scientific_colors(exoplanet: dict, planet_type: PlanetType) -> Tuple[Tuple[int, int, int], Tuple[int, int, int], Tuple[int, int, int]]:
-    """Get scientifically accurate colors based on planet type and temperature"""
     temp = exoplanet.get('temp_calculated') or exoplanet.get('temp_measured') or 300
     
     def hex_to_rgb(hex_color: str) -> Tuple[int, int, int]:
@@ -154,7 +128,6 @@ def get_scientific_colors(exoplanet: dict, planet_type: PlanetType) -> Tuple[Tup
 
 
 def simple_perlin_noise(x: float, y: float, scale: float = 10, octaves: int = 3) -> float:
-    """Simple Perlin-like noise using sin waves"""
     value = 0
     amplitude = 1
     frequency = scale
@@ -166,11 +139,10 @@ def simple_perlin_noise(x: float, y: float, scale: float = 10, octaves: int = 3)
         amplitude *= 0.5
         frequency *= 2
     
-    return (value / max_value + 1) / 2  # Normalize to 0-1
+    return (value / max_value + 1) / 2
 
 
 def add_noise(img: Image.Image, intensity: int = 25):
-    """Add random noise to the image"""
     pixels = img.load()
     width, height = img.size
     
@@ -186,7 +158,6 @@ def add_noise(img: Image.Image, intensity: int = 25):
 
 
 def draw_atmospheric_bands(img: Image.Image, colors: Tuple, turbulence: float = 1.0):
-    """Draw atmospheric bands for gas giants"""
     draw = ImageDraw.Draw(img)
     width, height = img.size
     bands = random.randint(6, 12)
@@ -195,10 +166,8 @@ def draw_atmospheric_bands(img: Image.Image, colors: Tuple, turbulence: float = 
         y = (i / bands) * height
         band_height = height / bands
         
-        # Alternate colors
         color = colors[1] if i % 2 == 0 else colors[2]
         
-        # Draw wavy band
         points = []
         for x in range(0, width + 5, 5):
             wave1 = math.sin(x / width * math.pi * 6 + i) * turbulence * 8
@@ -206,14 +175,12 @@ def draw_atmospheric_bands(img: Image.Image, colors: Tuple, turbulence: float = 
             wave_y = y + wave1 + wave2
             points.append((x, wave_y))
         
-        # Draw polygon for band
         if points:
             points.extend([(width, y + band_height), (0, y + band_height)])
             draw.polygon(points, fill=color)
 
 
 def draw_clouds(img: Image.Image, colors: Tuple, density: float = 0.3, pattern: str = 'wisps'):
-    """Draw cloud patterns"""
     overlay = Image.new('RGBA', img.size, (0, 0, 0, 0))
     draw = ImageDraw.Draw(overlay)
     width, height = img.size
@@ -237,7 +204,7 @@ def draw_clouds(img: Image.Image, colors: Tuple, density: float = 0.3, pattern: 
             color = colors[1] + (alpha,)
             draw.ellipse([(x - size, y - size), (x + size, y + size)], fill=color)
     
-    else:  # wisps
+    else:
         step = 2
         for y in range(0, height, step):
             for x in range(0, width, step):
@@ -251,7 +218,6 @@ def draw_clouds(img: Image.Image, colors: Tuple, density: float = 0.3, pattern: 
 
 
 def get_texture_resolution(radius: Optional[float]) -> int:
-    """Get texture resolution based on planet radius"""
     if not radius:
         return 256
     
@@ -266,20 +232,14 @@ def get_texture_resolution(radius: Optional[float]) -> int:
 
 
 def generate_planet_texture(exoplanet: dict, resolution: Optional[int] = None) -> Image.Image:
-    """Generate a scientifically accurate procedural texture for an exoplanet"""
-    
-    # Determine size
     size = resolution or get_texture_resolution(exoplanet.get('radius'))
     
-    # Classify planet and get colors
     planet_type = classify_planet(exoplanet)
     colors = get_scientific_colors(exoplanet, planet_type)
     temp = exoplanet.get('temp_calculated') or exoplanet.get('temp_measured') or 300
     
-    # Create base image
     img = Image.new('RGB', (size, size), colors[0])
     
-    # Generate features based on planet type
     if planet_type == PlanetType.HOT_JUPITER:
         draw_atmospheric_bands(img, colors, turbulence=1.5)
         draw_clouds(img, colors, density=0.4, pattern='spots')
@@ -324,24 +284,20 @@ def generate_planet_texture(exoplanet: dict, resolution: Optional[int] = None) -
         else:
             add_noise(img, intensity=15)
     
-    # Apply slight blur for smoother appearance
     img = img.filter(ImageFilter.GaussianBlur(radius=0.5))
     
     return img
 
 
 def generate_simple_texture(exoplanet: dict) -> Image.Image:
-    """Generate a simple low-res texture"""
     size = 32
     
     planet_type = classify_planet(exoplanet)
     colors = get_scientific_colors(exoplanet, planet_type)
     
-    # Create gradient
     img = Image.new('RGB', (size, size), colors[0])
     draw = ImageDraw.Draw(img)
     
-    # Simple radial gradient
     for r in range(size // 2, 0, -1):
         alpha = r / (size / 2)
         color = tuple(int(colors[0][i] * alpha + colors[1][i] * (1 - alpha)) for i in range(3))
@@ -351,21 +307,17 @@ def generate_simple_texture(exoplanet: dict) -> Image.Image:
 
 
 def image_to_base64(img: Image.Image, format='PNG') -> str:
-    """Convert PIL Image to Base64 string"""
     buffer = io.BytesIO()
     img.save(buffer, format=format)
     return base64.b64encode(buffer.getvalue()).decode('utf-8')
 
 
 def generate_and_store_textures(limit: Optional[int] = None, mode: str = 'local'):
-    """Generate textures for all exoplanets and store them"""
-    
     print(f"Connecting to MongoDB at {MONGODB_URI}...")
     client = MongoClient(MONGODB_URI)
     db = client[DATABASE_NAME]
     collection = db[COLLECTION_NAME]
     
-    # Get exoplanets
     query = {}
     exoplanets = list(collection.find(query).limit(limit) if limit else collection.find(query))
     total = len(exoplanets)
@@ -379,15 +331,12 @@ def generate_and_store_textures(limit: Optional[int] = None, mode: str = 'local'
         print(f"[{i}/{total}] Generating textures for {planet_name}...")
         
         try:
-            # Generate high-res texture
             high_res_img = generate_planet_texture(exoplanet)
             high_res_b64 = image_to_base64(high_res_img)
             
-            # Generate low-res texture
             low_res_img = generate_simple_texture(exoplanet)
             low_res_b64 = image_to_base64(low_res_img)
             
-            # Store in database (Base64 data URLs)
             update_data = {
                 'texture_high_url': f"data:image/png;base64,{high_res_b64}",
                 'texture_low_url': f"data:image/png;base64,{low_res_b64}",
@@ -422,4 +371,3 @@ if __name__ == '__main__':
         sys.exit(1)
     
     generate_and_store_textures(limit=args.limit, mode=args.mode)
-

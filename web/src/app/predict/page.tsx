@@ -24,7 +24,6 @@ interface UploadResult {
   sampleData: any[];
 }
 
-// Common exoplanet features for the form
 const FORM_FIELDS = [
   { name: 'planet_name', label: '🪐 Exoplanet Name', placeholder: 'e.g., Kepler-442b', type: 'text', required: true, fullWidth: true },
   { name: 'radius', label: 'Planet Radius (Earth radii)', placeholder: 'e.g., 2.5', type: 'number' },
@@ -67,17 +66,14 @@ export default function PredictPage() {
     setResult(null);
 
     try {
-      // Convert string values to numbers for numeric fields, keep text fields as strings
       const textFields = ['planet_name'];
       const cleanedData: Record<string, any> = {};
       Object.entries(formData).forEach(([key, value]) => {
         if (value === '' || value === undefined) {
           cleanedData[key] = null;
         } else if (textFields.includes(key)) {
-          // Keep text fields as strings
           cleanedData[key] = value.trim();
         } else {
-          // Convert numeric fields to numbers
           const numValue = parseFloat(value);
           cleanedData[key] = isNaN(numValue) ? null : numValue;
         }

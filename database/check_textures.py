@@ -1,7 +1,4 @@
 #!/usr/bin/env python3
-"""
-Quick diagnostic script to check if textures have been generated in MongoDB
-"""
 
 from pymongo import MongoClient
 
@@ -15,19 +12,15 @@ def check_textures():
     db = client[DATABASE_NAME]
     collection = db[COLLECTION_NAME]
     
-    # Count total planets
     total = collection.count_documents({})
     print(f"\n📊 Total exoplanets in database: {total}")
     
-    # Count planets with high-res textures
     with_high = collection.count_documents({'texture_high_url': {'$exists': True}})
     print(f"✅ Planets with high-res textures: {with_high} ({with_high/total*100:.1f}%)")
     
-    # Count planets with low-res textures
     with_low = collection.count_documents({'texture_low_url': {'$exists': True}})
     print(f"✅ Planets with low-res textures: {with_low} ({with_low/total*100:.1f}%)")
     
-    # Show a sample
     if with_high > 0:
         print("\n🔍 Sample planet with textures:")
         sample = collection.find_one(
@@ -43,8 +36,8 @@ def check_textures():
     else:
         print("\n⚠️  NO TEXTURES FOUND IN DATABASE!")
         print("\nTo generate textures, run:")
-        print("  python generate_textures.py --mode local --limit 10    # Test with 10 planets")
-        print("  python generate_textures.py --mode local                # Generate for all")
+        print("  python generate_textures.py --mode local --limit 10")
+        print("  python generate_textures.py --mode local")
     
     client.close()
 
@@ -54,6 +47,5 @@ if __name__ == '__main__':
     except Exception as e:
         print(f"\n❌ Error: {e}")
         print("\nMake sure MongoDB is running:")
-        print("  docker-compose up -d  # If using Docker")
-        print("  mongod                # If running locally")
-
+        print("  docker-compose up -d")
+        print("  mongod")

@@ -42,14 +42,12 @@ export class SceneService {
     );
     sunLight.position.copy(this.config.lighting.sun.position);
     
-    // Add a subtle hemisphere light for better ambient lighting
     const hemisphereLight = new THREE.HemisphereLight(
-      0x8888ff, // Sky color (bluish)
-      0x220022, // Ground color (deep purple)
+      0x8888ff,
+      0x220022,
       0.5
     );
 
-    // Add a soft fill light from the opposite direction
     const fillLight = new THREE.DirectionalLight(0x4444ff, 0.3);
     fillLight.position.set(-10000000, -10000000, -10000000);
 
@@ -65,7 +63,6 @@ export class SceneService {
     renderer.setPixelRatio(window.devicePixelRatio);
     renderer.setSize(window.innerWidth, window.innerHeight);
     
-    // Enable tone mapping for better color appearance
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.2;
     

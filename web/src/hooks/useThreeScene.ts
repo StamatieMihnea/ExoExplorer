@@ -41,7 +41,6 @@ export function useThreeScene(): UseThreeSceneReturn {
   const exoplanetsRef = useRef<ExoplanetLOD[]>([]);
   const raycasterRef = useRef<THREE.Raycaster>(new THREE.Raycaster());
   
-  // Services
   const sceneServiceRef = useRef<SceneService | null>(null);
   const tilesServiceRef = useRef<TilesService | null>(null);
   const exoplanetsServiceRef = useRef<ExoplanetsService | null>(null);
@@ -50,7 +49,6 @@ export function useThreeScene(): UseThreeSceneReturn {
   const starfieldServiceRef = useRef<StarfieldService | null>(null);
   const visibilityServiceRef = useRef<VisibilityService | null>(null);
   
-  // State
   const [selectedExoplanet, setSelectedExoplanet] = useState<SelectedExoplanet | null>(null);
   const [exoplanetsCount, setExoplanetsCount] = useState(0);
   const [distanceRange, setDistanceRange] = useState<{ min: number; max: number } | null>(null);
@@ -67,7 +65,6 @@ export function useThreeScene(): UseThreeSceneReturn {
   }, []);
 
   const navigateToPlanet = useCallback((exoplanet: Exoplanet) => {
-    // Find the LOD object for this exoplanet
     const lod = exoplanetsRef.current.find(l => {
       const lodExoplanet = l.userData.exoplanet;
       return lodExoplanet._id === exoplanet._id || lodExoplanet.name === exoplanet.name;
@@ -75,7 +72,6 @@ export function useThreeScene(): UseThreeSceneReturn {
 
     if (lod && cameraServiceRef.current) {
       const lodExoplanet = lod.userData.exoplanet;
-      // Calculate planet radius in scene units (1 Earth radius = 5M scene units)
       const EARTH_RADIUS_TO_SCENE_UNITS = 5000000;
       const planetRadius = (lodExoplanet.radius || 1) * EARTH_RADIUS_TO_SCENE_UNITS;
       
