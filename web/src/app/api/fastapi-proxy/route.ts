@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getDatabase } from '@/lib/mongodb';
 
 // Base URL for FastAPI backend
-const FASTAPI_BASE_URL = 'http://localhost:3001';
+const FASTAPI_BASE_URL = process.env.NEXT_PUBLIC_FASTAPI_URL || 'http://api:3001';
 
 export async function GET(request: NextRequest) {
   try {

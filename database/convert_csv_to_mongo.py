@@ -39,7 +39,7 @@ def parse_csv_to_json(csv_file):
     return exoplanets
 
 def connect_to_mongodb():
-    mongodb_uri = os.getenv('MONGODB_URI', 'mongodb://admin:password@localhost:27017/')
+    mongodb_uri = os.getenv('MONGODB_URI', 'mongodb://admin:password@mongodb:27017/')
     database_name = os.getenv('MONGO_DATABASE', 'exoexplorer')
     
     print(f"Connecting to MongoDB at {mongodb_uri.split('@')[1] if '@' in mongodb_uri else mongodb_uri}...")

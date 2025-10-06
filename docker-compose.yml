@@ -1,13 +1,55 @@
 version: "3.8"
 
 services:
+  mongodb:
+    image: mongo:7.0
+    container_name: exo-explorer-mongodb
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USERNAME:-admin}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD:-password}
+      MONGO_INITDB_DATABASE: ${MONGO_DATABASE:-exoexplorer}
+    volumes:
+      - mongodb_data:/data/db
+      - ./init-mongo.js:/docker-entrypoint-initdb.d/init-mongo.js:ro
+    healthcheck:
+      test: ["CMD", "mongo", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - exo-explorer-network
+
+  mongo-express:
+    image: mongo-express:1.0.2
+    container_name: exo-explorer-mongo-express
+    restart: unless-stopped
+    ports:
+      - "8081:8081"
+    environment:
+      ME_CONFIG_MONGODB_ADMINUSERNAME: ${MONGO_ROOT_USERNAME:-admin}
+      ME_CONFIG_MONGODB_ADMINPASSWORD: ${MONGO_ROOT_PASSWORD:-password}
+      ME_CONFIG_MONGODB_URL: mongodb://${MONGO_ROOT_USERNAME:-admin}:${MONGO_ROOT_PASSWORD:-password}@mongodb:27017/
+      ME_CONFIG_BASICAUTH_USERNAME: ${MONGO_EXPRESS_USERNAME:-admin}
+      ME_CONFIG_BASICAUTH_PASSWORD: ${MONGO_EXPRESS_PASSWORD:-pass}
+    depends_on:
+      - mongodb
+    networks:
+      - exo-explorer-network
+
   api:
     build:
       context: ./ml-prediction
       dockerfile: Dockerfile
-    restart: unless-stopped
-    ports:
-      - "3001:3001"
+    image: python:3.11-slim
+    working_dir: /app
+    volumes:
+      - ./ml-prediction:/app:delegated
+    command: uvicorn server:app --host 0.0.0.0 --port 3001 --reload
+    depends_on:
+      - mongodb
     networks:
       - exo-explorer-network
 
@@ -15,12 +57,39 @@ services:
     build:
       context: ./web
       dockerfile: Dockerfile
-    restart: unless-stopped
+    image: node:18-alpine
+    working_dir: /app
+    volumes:
+      - ./web:/app:delegated
+      - /app/node_modules
     ports:
       - "3000:3000"
+    env_file:
+      - ./web/.env
+    depends_on:
+      - api
+    command: sh -c "npm install --silent && npm run dev"
     networks:
       - exo-explorer-network
+
+  # db-init:
+  #   image: python:3.11-slim
+  #   working_dir: /data
+  #   volumes:
+  #     - ./database:/data:ro
+  #   command: sh -c "pip install pymongo --no-cache-dir && python3 convert_csv_to_mongo.py --drop"
+  #   env_file:
+  #     - ./database/.env
+  #   depends_on:
+  #     mongodb:
+  #       condition: service_healthy
+  #   networks:
+  #     - exo-explorer-network
 
 networks:
   exo-explorer-network:
     driver: bridge
+
+volumes:
+  mongodb_data:
+    driver: local
