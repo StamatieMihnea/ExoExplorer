@@ -13,9 +13,9 @@ services:
       MONGO_INITDB_DATABASE: ${MONGO_DATABASE:-exoexplorer}
     volumes:
       - mongodb_data:/data/db
-      - ./init-mongo.js:/docker-entrypoint-initdb.d/init-mongo.js:ro
+      - ./database/init-mongo.js:/docker-entrypoint-initdb.d/init-mongo.js:ro
     healthcheck:
-      test: ["CMD", "mongo", "--eval", "db.adminCommand('ping')"]
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -39,17 +39,38 @@ services:
     networks:
       - exo-explorer-network
 
+  db-init:
+    build:
+      context: ./database
+      dockerfile: Dockerfile
+    container_name: exo-explorer-db-init
+    environment:
+      MONGODB_URI: mongodb://${MONGO_ROOT_USERNAME:-admin}:${MONGO_ROOT_PASSWORD:-password}@mongodb:27017/?authSource=admin
+      MONGO_DATABASE: ${MONGO_DATABASE:-exoexplorer}
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    networks:
+      - exo-explorer-network
+    restart: "no"
+
   api:
     build:
       context: ./ml-prediction
       dockerfile: Dockerfile
-    image: python:3.11-slim
-    working_dir: /app
+    container_name: exo-explorer-api
+    restart: unless-stopped
+    ports:
+      - "3001:3001"
     volumes:
       - ./ml-prediction:/app:delegated
+    environment:
+      MONGODB_URI: mongodb://${MONGO_ROOT_USERNAME:-admin}:${MONGO_ROOT_PASSWORD:-password}@mongodb:27017/?authSource=admin
+      MONGO_DATABASE: ${MONGO_DATABASE:-exoexplorer}
     command: uvicorn server:app --host 0.0.0.0 --port 3001 --reload
     depends_on:
       - mongodb
+      - db-init
     networks:
       - exo-explorer-network
 
@@ -57,34 +78,23 @@ services:
     build:
       context: ./web
       dockerfile: Dockerfile
-    image: node:18-alpine
-    working_dir: /app
+    container_name: exo-explorer-web
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
     volumes:
       - ./web:/app:delegated
       - /app/node_modules
-    ports:
-      - "3000:3000"
-    env_file:
-      - ./web/.env
+    environment:
+      NODE_ENV: development
+      MONGODB_URI: mongodb://${MONGO_ROOT_USERNAME:-admin}:${MONGO_ROOT_PASSWORD:-password}@mongodb:27017/exoexplorer?authSource=admin
+      NEXT_PUBLIC_FASTAPI_URL: http://api:3001
     depends_on:
       - api
+      - mongodb
     command: sh -c "npm install --silent && npm run dev"
     networks:
       - exo-explorer-network
-
-  # db-init:
-  #   image: python:3.11-slim
-  #   working_dir: /data
-  #   volumes:
-  #     - ./database:/data:ro
-  #   command: sh -c "pip install pymongo --no-cache-dir && python3 convert_csv_to_mongo.py --drop"
-  #   env_file:
-  #     - ./database/.env
-  #   depends_on:
-  #     mongodb:
-  #       condition: service_healthy
-  #   networks:
-  #     - exo-explorer-network
 
 networks:
   exo-explorer-network:
